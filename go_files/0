@@ -1,0 +1,7 @@
+#!/bin/zsh
+
+go build -o docsearch-cli .
+clear
+exa -a --group-directories-first --sort=extension
+
+exit 0

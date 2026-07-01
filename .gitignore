@@ -1,0 +1,22 @@
+# Python / CDK
+cdk/venv/
+cdk/cdk.out/
+cdk/.cdk.staging/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+*.egg-info/
+.env
+
+# Go
+go_files/*.test
+
+# macOS
+.DS_Store
+._*
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo

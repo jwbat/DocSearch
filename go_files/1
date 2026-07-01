@@ -1,0 +1,5 @@
+#!/bin/zsh
+
+nvim main.go internal/*/*.go go.mod README.md
+
+exit 0
