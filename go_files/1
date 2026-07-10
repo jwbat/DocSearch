@@ -1,5 +1,5 @@
 #!/bin/zsh
 
-nvim main.go internal/*/*.go go.mod README.md
+nvim *.go **/*.go README.md
 
 exit 0

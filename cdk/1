@@ -1,0 +1,5 @@
+#!/bin/zsh
+
+nvim app.py docsearch_cdk/docsearch_stack.py README.md
+
+exit 0
