@@ -1,5 +1,0 @@
-#!/bin/zsh
-
-nvim *.go **/*.go README.md
-
-exit 0
