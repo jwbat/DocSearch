@@ -1,0 +1,12 @@
+# docker compose run docsearch [status | sync]
+services:
+  docsearch:
+    image: docsearch:latest
+    volumes:
+      - ~/.aws:/root/.aws:ro
+      - ~/Desktop/Docs:/app/Docs
+    environment:
+      - AWS_PROFILE=personal
+      - AWS_REGION=us-west-2
+      - DOCSEARCH_BUCKET=${DOCSEARCH_BUCKET}
+      - DOCSEARCH_TABLE=${DOCSEARCH_TABLE}

@@ -1,0 +1,25 @@
+# version control
+.git
+.gitignore
+
+# personal conveniences
+.build
+.editfiles
+
+# docs not needed inside the image
+README.md
+CLAUDE.md
+
+# Go test files (not needed in production binary)
+**/*_test.go
+
+# local env/secrets — never let these into an image
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# The Dockerfile and dockerignore themselves don't need to be copied in
+Dockerfile
+.dockerignore

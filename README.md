@@ -2,7 +2,7 @@
 
 A personal document storage and retrieval system built on AWS. Documents live
 in a local directory tree, are synced to S3 by a CLI tool, and are browsable
-via a read-only web frontend.
+via a read-only web frontend (not yet implemented).
 
 ---
 
@@ -45,7 +45,7 @@ including a future browser-based one.
 
 ---
 
-## Read Path (web frontend)
+## Read Path (web frontend) (TODO)
 
 The web frontend is read-only and holds no AWS credentials. It reaches the
 document store through two API Gateway endpoints backed by Go Lambda functions.
