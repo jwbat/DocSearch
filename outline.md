@@ -1,6 +1,6 @@
 # DocSearch Read Path — Implementation Outline
 
-Scope: Go Lambda functions, API Gateway, and the React web frontend, as
+Scope: a Go Lambda function, API Gateway, and the React web frontend, as
 described in the "Read Path" section of `README.md`. The write path (CLI, S3,
 DynamoDB) already exists and is not changed except where noted.
 
@@ -15,7 +15,7 @@ there is a real, deployed API for it to call.
 | # | Topic | Decision |
 |---|---|---|
 | 1 | API access control | No auth. An unguessable URL plus API Gateway throttling is enough; the docs aren't sensitive. |
-| 2 | Lambda code and build | Handlers go in `go_files/cmd/` and share `internal/`. CDK builds them with Docker bundling. |
+| 2 | Lambda code and build | One Lambda serves both routes, switching on the request path. Its entry point is `go_files/cmd/api-lambda/` and it shares `internal/`. CDK builds it with Docker bundling. |
 | 3 | API Gateway flavor | HTTP API (v2). |
 | 4 | Frontend hosting | S3 + CloudFront, defined in CDK. |
 | 5 | Deploy target | `AWS_PROFILE=personal`, `us-west-2`. Pin `env=cdk.Environment(...)` in `app.py`. |
@@ -26,17 +26,18 @@ there is a real, deployed API for it to call.
 
 ---
 
-## Phase 1 — Lambda handlers (Go), local only
+## Phase 1 — Lambda (Go), local only
 
-1. **Code layout.** Add Lambda entry points to the existing Go module:
+1. **Code layout.** Add one Lambda entry point to the existing Go module:
    ```
    go_files/
      cmd/
-       manifest-lambda/main.go
-       fileurl-lambda/main.go
+       api-lambda/main.go  ← wires AWS clients, starts the Lambda runtime
      internal/
-       api/            ← shared handler logic, JSON response shapes
+       api/                ← router, route handlers, JSON response shapes
    ```
+   The router dispatches on method and path: `GET /manifest` and
+   `GET /file-url`. Anything else returns 404.
    The CLI's `main.go` stays where it is. The Dockerfile and `compose.yaml`
    still build only the CLI.
 2. **Dependencies.** Add `github.com/aws/aws-lambda-go` for the events types
@@ -53,7 +54,8 @@ there is a real, deployed API for it to call.
 4. **`GET /file-url?path=` handler.**
    - Validate `path`: it must be present, with no leading `/` and no `..`.
    - Check that the path is in the manifest and not soft-deleted, so the API
-     can't be used to presign arbitrary keys or deleted objects.
+     can't be used to presign arbitrary keys or deleted objects. This is a
+     single DynamoDB `GetItem` on `path` (the partition key), not a scan.
    - Return `{ "url": "<presigned GET>", "expires_in": <seconds> }` with a
      short expiry (e.g. 5 minutes). Set `ResponseContentType` from the
      manifest so PDFs and images render inline in the browser.
@@ -61,10 +63,15 @@ there is a real, deployed API for it to call.
      `DOCSEARCH_TABLE` environment variables.
 5. **Errors.** Use one JSON error body shape with 400 / 404 / 500 status
    codes.
-6. **Unit tests.** Test the handler logic against small interfaces for the
-   DynamoDB and S3 clients, with no AWS dependency, in the same style as
+6. **Unit tests.** Test the handler logic against a small interface for the
+   DynamoDB client, with no AWS dependency, in the same style as
    `internal/syncer`. Cover deleted-item filtering, pagination, path
-   validation, and the not-found case. `go test ./...` must pass.
+   validation, unknown routes, and the not-found case. `go test ./...` must
+   pass.
+   - Presigning with `s3.PresignClient` signs locally and makes no network
+     call, so the `/file-url` tests use the real presigner with static fake
+     credentials and check the URL's key, expiry, and response content type.
+     Only DynamoDB needs a fake.
 
 ## Phase 2 — Infrastructure (CDK), synth only
 
@@ -77,21 +84,18 @@ there is a real, deployed API for it to call.
    `DocSearchWebStack`. In `app.py`, pass it the storage stack's `bucket` and
    `table` as cross-stack references.
 9. **Lambda build.** Use CDK `Code.from_asset` with Docker bundling, using a
-   `golang` image, to cross-compile each handler as `bootstrap` for
+   `golang` image, to cross-compile `cmd/api-lambda` as `bootstrap` for
    `provided.al2023` on `arm64` (`GOOS=linux GOARCH=arm64 CGO_ENABLED=0`).
    The asset source is `go_files/`.
-10. **Lambda constructs.**
-    - `ManifestFunction`: env `DOCSEARCH_TABLE`. IAM is
-      `table.grant_read_data`.
-    - `FileUrlFunction`: env `DOCSEARCH_TABLE` and `DOCSEARCH_BUCKET`. IAM is
+10. **Lambda construct.**
+    - `ApiFunction`: env `DOCSEARCH_TABLE` and `DOCSEARCH_BUCKET`. IAM is
       `table.grant_read_data` and `bucket.grant_read`. The role needs
       `s3:GetObject` because the presigned URL is signed with its
       credentials.
     - Modest memory and timeout settings. Set log retention explicitly so logs
       don't accumulate forever.
 11. **HTTP API (v2).**
-    - Routes: `GET /manifest` → ManifestFunction and `GET /file-url` →
-      FileUrlFunction.
+    - Routes: `GET /manifest` and `GET /file-url`, both → ApiFunction.
     - CORS limited to `http://localhost:5173` and the CloudFront origin. The
       CloudFront origin is added in Phase 6.
     - No authorizer. Set default-stage throttling (rate and burst limits) as
@@ -179,11 +183,11 @@ there is a real, deployed API for it to call.
 23. **Update docs.**
     - `README.md`: move the read path out of "TODO" and "What Is Not Built
       Yet", note that search is not planned, describe the two stacks, and add
-      build, deploy, and dev instructions for the Lambdas and `web/`.
+      build, deploy, and dev instructions for the Lambda and `web/`.
     - `cdk/CLAUDE.md`: note the second stack and that `app.py` now pins
       account and region.
-    - `go_files/CLAUDE.md`: note that the Lambda binaries are CDK build
-      artifacts and are *not* moved to `~/.local/bin` the way the CLI is.
+    - `go_files/CLAUDE.md`: note that the Lambda binary is a CDK build
+      artifact and is *not* moved to `~/.local/bin` the way the CLI is.
 
 ---
 
