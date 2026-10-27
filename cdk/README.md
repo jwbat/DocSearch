@@ -3,7 +3,9 @@
 This stack currently creates only the two storage resources the CLI needs:
 
 - An S3 bucket (versioned, encrypted, all public access blocked) — holds
-  file content, keyed by path.
+  file content, keyed by path. A lifecycle rule expires noncurrent
+  versions (overwritten or deleted content) after 30 days, so a deleted
+  file can be recovered for 30 days and no longer than that.
 - A DynamoDB table (`path` as partition key, on-demand billing) — holds
   the manifest (hash, size, content type, soft-delete flag).
 

@@ -53,6 +53,10 @@ docsearch-cli sync -root ~/Docs
   versioning on the bucket, this is just a delete marker — recoverable)
   and the DynamoDB item is flagged `deleted = true` rather than removed,
   so the manifest keeps its history.
+- If a file that needs uploading has the same hash as a live remote entry
+  (the usual case when you rename a file or directory), it's copied
+  server-side in S3 (`Copy    old -> new` in the output) instead of
+  re-uploaded. The old path is still deleted as above.
 - Filesystem mtime is intentionally not used for the diff — only content
   hash matters. This keeps the same diff logic reusable for a future
   client (e.g. browser-based) that can't rely on OS-level file metadata.
@@ -64,5 +68,6 @@ go test ./...
 ```
 
 `internal/syncer` has a test covering the diff logic (new file, unchanged
-file, file removed locally, and a soft-deleted file reappearing locally)
+file, file removed locally, a soft-deleted file reappearing locally, and
+renames becoming server-side copies)
 that runs with no AWS dependency.

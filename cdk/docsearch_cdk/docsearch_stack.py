@@ -1,5 +1,6 @@
 from aws_cdk import (
     CfnOutput,
+    Duration,
     RemovalPolicy,
     Stack,
 )
@@ -27,6 +28,17 @@ class DocSearchStack(Stack):
             versioned=True,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             encryption=s3.BucketEncryption.S3_MANAGED,
+            # Versioning keeps every overwritten or deleted object around as
+            # a noncurrent version, so without this, renames and edits grow
+            # storage forever. 30 days is the recovery window for anything
+            # the CLI deletes or overwrites. Once those versions expire, the
+            # leftover delete markers are cleaned up too.
+            lifecycle_rules=[
+                s3.LifecycleRule(
+                    noncurrent_version_expiration=Duration.days(30),
+                    expired_object_delete_marker=True,
+                )
+            ],
             # RETAIN means deleting the stack won't delete the bucket (or
             # its contents) by accident. This is personal document storage —
             # losing it because of a "cdk destroy" typo would be a bad day.

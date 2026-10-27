@@ -73,7 +73,7 @@ func main() {
 	}
 
 	// cmd == "sync"
-	if len(plan.Upload) == 0 && len(plan.Delete) == 0 {
+	if plan.Empty() {
 		return
 	}
 	if err := syncer.Execute(ctx, plan, local, s3Client, ddbClient, bucket, table); err != nil {
@@ -83,13 +83,16 @@ func main() {
 }
 
 func printPlan(p syncer.Plan) {
+	for _, op := range p.Copy {
+		fmt.Printf("Copy    %s -> %s\n", op.From, op.To)
+	}
 	for _, path := range p.Upload {
 		fmt.Printf("Update  %s\n", path)
 	}
 	for _, path := range p.Delete {
 		fmt.Printf("Delete  %s\n", path)
 	}
-	if len(p.Upload) == 0 && len(p.Delete) == 0 {
+	if p.Empty() {
 		fmt.Println("Up to date.")
 	}
 }
