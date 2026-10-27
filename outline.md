@@ -86,7 +86,9 @@ there is a real, deployed API for it to call.
 9. **Lambda build.** Use CDK `Code.from_asset` with Docker bundling, using a
    `golang` image, to cross-compile `cmd/api-lambda` as `bootstrap` for
    `provided.al2023` on `arm64` (`GOOS=linux GOARCH=arm64 CGO_ENABLED=0`).
-   The asset source is `go_files/`.
+   The asset source is `go_files/`. Bundling tries the local Go toolchain
+   first and falls back to Docker only if `go` isn't installed, so synth and
+   deploy don't need a running Docker daemon.
 10. **Lambda construct.**
     - `ApiFunction`: env `DOCSEARCH_TABLE` and `DOCSEARCH_BUCKET`. IAM is
       `table.grant_read_data` and `bucket.grant_read`. The role needs

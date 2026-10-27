@@ -13,13 +13,19 @@ class DocSearchStack(Stack):
     """Storage layer for Doc Search: the S3 bucket that holds file content
     and the DynamoDB table that holds the manifest (path -> hash/metadata).
 
-    The Go CLI talks to both of these directly via the AWS SDK — there's
-    no Lambda or API Gateway in this stack yet. Those come later, once the
-    read-only web frontend needs a way to list the manifest and fetch file
-    content without holding AWS credentials itself.
+    The Go CLI talks to both of these directly via the AWS SDK. The read
+    path (Lambda + HTTP API) lives in DocSearchWebStack, which reads from
+    these resources but never writes to them.
     """
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        construct_id: str,
+        *,
+        cors_origins: list[str],
+        **kwargs,
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         self.bucket = s3.Bucket(
@@ -37,6 +43,16 @@ class DocSearchStack(Stack):
                 s3.LifecycleRule(
                     noncurrent_version_expiration=Duration.days(30),
                     expired_object_delete_marker=True,
+                )
+            ],
+            # The web frontend fetch()es markdown and plain text from
+            # presigned URLs to render them in-page, which is a cross-origin
+            # read. GET only — browsers never write to this bucket.
+            cors=[
+                s3.CorsRule(
+                    allowed_methods=[s3.HttpMethods.GET],
+                    allowed_origins=cors_origins,
+                    max_age=3600,
                 )
             ],
             # RETAIN means deleting the stack won't delete the bucket (or
