@@ -10,8 +10,13 @@ from docsearch_cdk.web_stack import DocSearchWebStack
 ENV = cdk.Environment(account="559612528400", region="us-west-2")
 
 # Browser origins allowed to call the API and read presigned URLs. The
+# .local name is the Vite dev server as reached from other devices on the
+# LAN (e.g. an iPhone); it survives DHCP handing the Mac a new IP. The
 # CloudFront origin is added once frontend hosting exists.
-FRONTEND_ORIGINS = ["http://localhost:5173"]
+FRONTEND_ORIGINS = [
+    "http://localhost:5173",
+    "http://jamess-macbook-pro.local:5173",
+]
 
 app = cdk.App()
 

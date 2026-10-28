@@ -98,7 +98,10 @@ there is a real, deployed API for it to call.
       don't accumulate forever.
 11. **HTTP API (v2).**
     - Routes: `GET /manifest` and `GET /file-url`, both → ApiFunction.
-    - CORS limited to `http://localhost:5173` and the CloudFront origin. The
+    - CORS limited to `http://localhost:5173`,
+      `http://jamess-macbook-pro.local:5173` (the dev server as reached from
+      an iPhone on the LAN), and the CloudFront origin. All three come from
+      `FRONTEND_ORIGINS` in `app.py`. The
       CloudFront origin is added in Phase 6.
     - No authorizer. Set default-stage throttling (rate and burst limits) as
       the cost and abuse guard.
