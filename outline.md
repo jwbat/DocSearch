@@ -4,6 +4,12 @@ Scope: a Go Lambda function, API Gateway, and the React web frontend, as
 described in the "Read Path" section of `README.md`. The write path (CLI, S3,
 DynamoDB) already exists and is not changed except where noted.
 
+**Status (2026-10-28):** Phases 1–4 are done and deployed. Next is Phase 5:
+`web/src/App.tsx` is still the Phase 4 placeholder that lists top-level
+folders. Run `npm run dev` in `web/` and open
+`http://jamess-macbook-pro.local:5173/` on the iPhone. The IP address won't
+work, because it isn't an allowed CORS origin.
+
 The order goes from the bottom of the stack up. Each layer is tested before
 the next one is built on top of it, so the React app is only started once
 there is a real, deployed API for it to call.
