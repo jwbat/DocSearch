@@ -1,3 +1,4 @@
 app.py
 docsearch_cdk/docsearch_stack.py
+docsearch_cdk/web_stack.py
 README.md

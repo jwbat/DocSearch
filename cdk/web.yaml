@@ -1,0 +1,219 @@
+Resources:
+  ApiFunctionLogs0D7A2434:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 30
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/ApiFunctionLogs/Resource
+  ApiFunctionServiceRole52B9747B:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/ApiFunction/ServiceRole/Resource
+  ApiFunctionServiceRoleDefaultPolicy20A32B8D:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - dynamodb:BatchGetItem
+              - dynamodb:ConditionCheckItem
+              - dynamodb:DescribeTable
+              - dynamodb:GetItem
+              - dynamodb:GetRecords
+              - dynamodb:GetShardIterator
+              - dynamodb:Query
+              - dynamodb:Scan
+            Effect: Allow
+            Resource:
+              Fn::ImportValue: DocSearchStack:ExportsOutputFnGetAttManifestTable24A5E2D7Arn19BB6C19
+          - Action:
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+            Effect: Allow
+            Resource:
+              - Fn::ImportValue: DocSearchStack:ExportsOutputFnGetAttDocsBucketECEA003FArn8A043E5D
+              - Fn::Join:
+                  - ""
+                  - - Fn::ImportValue: DocSearchStack:ExportsOutputFnGetAttDocsBucketECEA003FArn8A043E5D
+                    - /*
+        Version: "2012-10-17"
+      PolicyName: ApiFunctionServiceRoleDefaultPolicy20A32B8D
+      Roles:
+        - Ref: ApiFunctionServiceRole52B9747B
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/ApiFunction/ServiceRole/DefaultPolicy/Resource
+  ApiFunctionCE271BD4:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - arm64
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-559612528400-us-west-2
+        S3Key: 33b7d3b0f305e575e3e9549be5bceb1794311eefd91277600970f617fbdbb5f6.zip
+      Environment:
+        Variables:
+          DOCSEARCH_TABLE:
+            Fn::ImportValue: DocSearchStack:ExportsOutputRefManifestTable24A5E2D7F7C9A133
+          DOCSEARCH_BUCKET:
+            Fn::ImportValue: DocSearchStack:ExportsOutputRefDocsBucketECEA003FBE2AA417
+      Handler: bootstrap
+      LoggingConfig:
+        LogGroup:
+          Ref: ApiFunctionLogs0D7A2434
+      MemorySize: 256
+      Role:
+        Fn::GetAtt:
+          - ApiFunctionServiceRole52B9747B
+          - Arn
+      Runtime: provided.al2023
+      Timeout: 10
+    DependsOn:
+      - ApiFunctionServiceRoleDefaultPolicy20A32B8D
+      - ApiFunctionServiceRole52B9747B
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/ApiFunction/Resource
+      aws:asset:path: asset.33b7d3b0f305e575e3e9549be5bceb1794311eefd91277600970f617fbdbb5f6
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  HttpApiF5A9A8A7:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      CorsConfiguration:
+        AllowHeaders:
+          - content-type
+        AllowMethods:
+          - GET
+        AllowOrigins:
+          - http://localhost:5173
+          - http://jamess-macbook-pro.local:5173
+        MaxAge: 3600
+      Name: HttpApi
+      ProtocolType: HTTP
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/HttpApi/Resource
+  HttpApiGETmanifestApiIntegration1FDD6457:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: HttpApiF5A9A8A7
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::GetAtt:
+          - ApiFunctionCE271BD4
+          - Arn
+      PayloadFormatVersion: "2.0"
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/HttpApi/GET--manifest/ApiIntegration/Resource
+  HttpApiGETmanifestApiIntegrationPermission0FF44D4F:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ApiFunctionCE271BD4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:us-west-2:559612528400:"
+            - Ref: HttpApiF5A9A8A7
+            - /*/*/manifest
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/HttpApi/GET--manifest/ApiIntegration-Permission
+  HttpApiGETmanifest7304DA27:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: HttpApiF5A9A8A7
+      AuthorizationType: NONE
+      RouteKey: GET /manifest
+      Target:
+        Fn::Join:
+          - ""
+          - - integrations/
+            - Ref: HttpApiGETmanifestApiIntegration1FDD6457
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/HttpApi/GET--manifest/Resource
+  HttpApiGETfileurlApiIntegrationPermissionC50F00BD:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - ApiFunctionCE271BD4
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:aws:execute-api:us-west-2:559612528400:"
+            - Ref: HttpApiF5A9A8A7
+            - /*/*/file-url
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/HttpApi/GET--file-url/ApiIntegration-Permission
+  HttpApiGETfileurl520D02D3:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: HttpApiF5A9A8A7
+      AuthorizationType: NONE
+      RouteKey: GET /file-url
+      Target:
+        Fn::Join:
+          - ""
+          - - integrations/
+            - Ref: HttpApiGETmanifestApiIntegration1FDD6457
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/HttpApi/GET--file-url/Resource
+  DefaultStageEE28A986:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId:
+        Ref: HttpApiF5A9A8A7
+      AutoDeploy: true
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 20
+      StageName: $default
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/DefaultStage/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/12O3WrDMAyFn6X3jtYlY7tuB/uBwUL6AEVNPVdLYptIXgjG7z7sUTZ2db6jI6FTQ32/he0GF67681CNdIJ4EOwHhQsf4+gMQ3xz5nl2wavHD3vlpEacTmeE+BRsL+RsTv9yq+eJmMnZpAgniJ0bdQ6Ktm6kfi17hZLi5ojMWhh2WRQ3sA/9oGWPrBV6Mih6wfWrhvgi4nee8nmWbDsXRBd6taLNjNce/+zv3kHQlEIFUlLlbzZkTZ6/B/FBkmpXuTh708DtHTxsPpmomoMVmjR0P/oNobZh20gBAAA=
+    Metadata:
+      aws:cdk:path: DocSearchWebStack/CDKMetadata/Default
+Outputs:
+  ApiUrl:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: HttpApiF5A9A8A7
+          - .execute-api.us-west-2.
+          - Ref: AWS::URLSuffix
+          - /
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+

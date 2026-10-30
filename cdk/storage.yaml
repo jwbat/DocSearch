@@ -1,0 +1,90 @@
+Resources:
+  DocsBucketECEA003F:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - http://localhost:5173
+              - http://jamess-macbook-pro.local:5173
+            MaxAge: 3600
+      LifecycleConfiguration:
+        Rules:
+          - ExpiredObjectDeleteMarker: true
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: DocSearchStack/DocsBucket/Resource
+  ManifestTable24A5E2D7:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: path
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: path
+          KeyType: HASH
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: DocSearchStack/ManifestTable/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/yWJyw6CMBAAv4V7uyIQvesHaNA72T6MtdAauhtCmv67EU4zmWmgOdVQV7gkqY2Xo1OQH4TaC1zSkFML+cLaWxLXV9itCLMGnKJRkJ+oRvtfm5Qiepsiz3prN6YvUxH3ld4xHFo4dnCuPsk5OXMgN1nod/4A3Jb3BocAAAA=
+    Metadata:
+      aws:cdk:path: DocSearchStack/CDKMetadata/Default
+Outputs:
+  BucketName:
+    Value:
+      Ref: DocsBucketECEA003F
+  TableName:
+    Value:
+      Ref: ManifestTable24A5E2D7
+  ExportsOutputFnGetAttManifestTable24A5E2D7Arn19BB6C19:
+    Value:
+      Fn::GetAtt:
+        - ManifestTable24A5E2D7
+        - Arn
+    Export:
+      Name: DocSearchStack:ExportsOutputFnGetAttManifestTable24A5E2D7Arn19BB6C19
+  ExportsOutputFnGetAttDocsBucketECEA003FArn8A043E5D:
+    Value:
+      Fn::GetAtt:
+        - DocsBucketECEA003F
+        - Arn
+    Export:
+      Name: DocSearchStack:ExportsOutputFnGetAttDocsBucketECEA003FArn8A043E5D
+  ExportsOutputRefManifestTable24A5E2D7F7C9A133:
+    Value:
+      Ref: ManifestTable24A5E2D7
+    Export:
+      Name: DocSearchStack:ExportsOutputRefManifestTable24A5E2D7F7C9A133
+  ExportsOutputRefDocsBucketECEA003FBE2AA417:
+    Value:
+      Ref: DocsBucketECEA003F
+    Export:
+      Name: DocSearchStack:ExportsOutputRefDocsBucketECEA003FBE2AA417
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+
