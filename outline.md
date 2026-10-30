@@ -178,6 +178,40 @@ there is a real, deployed API for it to call.
     light/dark), tap targets on mobile, and showing metadata (size, modified
     time).
 
+### Phase 5 progress (as of 2026-10-30)
+
+Working in very small steps, checked on a MacBook and an iPhone 17 (dev
+server at `http://jamess-macbook-pro.local:5173`). Style: warm dark theme,
+not black. Further small tweaks wait until they come up in real use.
+
+Done:
+- **Theme and iPhone basics:** palette as CSS variables in `index.css`
+  (dark only), `viewport-fit=cover` with safe-area padding, `theme-color`.
+- **App shell** (`App.tsx`, `App.css`): header titled "Docs", tree and viewer
+  panes. Two panes side by side at ≥700px wide; one pane at a time below
+  that **and on phones in landscape** (touch screens under 500px tall).
+  Single-pane mode scrolls the page itself under a sticky header so Safari
+  collapses its bars; ‹ Files returns to the previous tree position.
+- **Disclosure widget** (`TreeView.tsx`, `TreeView.css`): folders expand in
+  place, files select (amber highlight), long names wrap, 44px rows on touch,
+  17px folder names on touch screens, enlarged disclosure triangle.
+- **Markdown viewer** (`Viewer.tsx`, `Viewer.css`): lazy fetch via
+  `/file-url`, then render with `react-markdown` + `remark-gfm`. Inline HTML
+  such as `<br>` via `rehype-raw` + `rehype-sanitize`. Syntax highlighting
+  via `rehype-highlight` with a custom warm theme in `highlight.css`.
+
+Not done yet:
+- **Next, either:** PNG/JPG viewing or PDF viewing (currently "No preview for
+  this file type yet"). Plain text is also still to do.
+- **Markdown, still open:** relative images (`![](img/x.png)`) need the
+  `/file-url` lookup, and relative links between docs need hash routing.
+  Both are still broken.
+- **Hash routing:** selected file in the URL, Back/Forward, deep links that
+  expand the folders on the path.
+- **Later, if wanted:** draggable tree-pane width.
+- **Before Phase 6:** code-split the markdown renderer (the bundle is
+  ~225 KB gzipped, and the build warns about chunk size).
+
 ## Phase 6 — Hosting and docs
 
 22. **Frontend hosting** in `DocSearchWebStack`:

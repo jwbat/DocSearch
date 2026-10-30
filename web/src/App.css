@@ -1,0 +1,127 @@
+/* App shell: header on top, tree and viewer panes below.
+   Wide screens show both panes side by side; narrow screens show one at a
+   time (tree until a file is selected, then the viewer).
+
+   Scrolling differs between the two. Single-pane, the page itself scrolls
+   under a sticky header: that's what lets iOS Safari collapse its address
+   and tab bars, which it only does when the document scrolls. Two-pane, the
+   shell is exactly one screen tall and each pane scrolls on its own, so the
+   tree stays put while reading. */
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  /* dvh tracks iOS Safari's collapsing toolbars; vh would leave the bottom
+     of the page hidden behind them. */
+  min-height: 100dvh;
+  /* Keep content clear of the notch/Dynamic Island in landscape. The insets
+     are 0 on devices without one. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  box-sizing: border-box;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: env(safe-area-inset-top) 1rem 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.header .count {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.back {
+  display: none;
+  /* At least 44px tall: Apple's minimum comfortable tap target. */
+  min-height: 2.75rem;
+  margin-left: -0.5rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.panes {
+  flex: 1;
+  display: flex;
+}
+
+.pane {
+  /* Clear of the home indicator once scrolled to the end. */
+  padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.tree-pane {
+  flex: 1;
+  /* Tighter sides than the viewer: tree rows carry their own padding. */
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  background: var(--surface);
+}
+
+.viewer-pane {
+  flex: 1;
+  /* Lets wide code blocks and tables scroll inside themselves instead of
+     stretching the pane. */
+  min-width: 0;
+}
+
+.placeholder {
+  color: var(--text-muted);
+}
+
+/* One pane at a time: narrow windows, plus phones in landscape. A rotated
+   phone is wide (an iPhone 17 is 874px) but short, so a touch screen under
+   500px tall stays single-pane. iPads (768px+ tall) still get two panes.
+   The two queries below must stay complements of each other. */
+@media (max-width: 699px), (pointer: coarse) and (max-height: 499px) {
+  .shell[data-selected='true'] .tree-pane,
+  .shell[data-selected='false'] .viewer-pane {
+    display: none;
+  }
+  .shell[data-selected='true'] .back {
+    display: block;
+  }
+  .shell[data-selected='true'] h1 {
+    display: none;
+  }
+}
+
+/* Side by side: one screen tall, panes scroll independently, tree at a
+   fixed comfortable width. */
+@media (min-width: 700px) and (pointer: fine), (min-width: 700px) and (min-height: 500px) {
+  .shell {
+    height: 100dvh;
+  }
+  .panes {
+    /* Lets the panes shrink below their content so they scroll internally
+       instead of stretching the page. */
+    min-height: 0;
+  }
+  .pane {
+    overflow-y: auto;
+  }
+  .tree-pane {
+    flex: 0 0 20rem;
+    border-right: 1px solid var(--border);
+  }
+}

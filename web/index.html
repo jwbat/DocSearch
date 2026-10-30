@@ -3,8 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DocSearch</title>
+    <!-- viewport-fit=cover lets the page extend under the iPhone's notch and
+         home indicator; index.css pads content back out with safe-area insets. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Tints Safari's toolbar to match the page background (--bg). -->
+    <meta name="theme-color" content="#1f1b18" />
+    <meta name="color-scheme" content="dark" />
+    <title>Docs</title>
   </head>
   <body>
     <div id="root"></div>

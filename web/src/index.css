@@ -1,10 +1,34 @@
+/* Warm dark theme. Every color the app uses comes from these variables, so
+   restyling is a matter of changing values here. */
 :root {
+  --bg: #1f1b18;
+  --surface: #28231f;
+  --surface-hover: #322c27;
+  --border: #3d3630;
+  --text: #e8e0d6;
+  --text-muted: #a89c8f;
+  --accent: #d9a05b;
+  --accent-soft: rgb(217 160 91 / 0.15);
+
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
-  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  /* Dark only: native controls and scrollbars stay dark even when the OS is
+     in light mode. */
+  color-scheme: dark;
+  /* Stop iOS Safari from enlarging text on its own in landscape. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  padding: 1rem;
+  /* No grey flash over tapped elements on iOS; hover/active styles do that
+     job instead. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: var(--accent);
 }

@@ -1,0 +1,62 @@
+/* Syntax-highlighting theme for code blocks (highlight.js class names, as
+   emitted by rehype-highlight). A warm palette to match the app rather than
+   one of highlight.js's stock themes; every color is at least 4.5:1 against
+   the code block background (--surface). Anything without a rule here keeps
+   the normal text color. */
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-section {
+  color: #e39b5f; /* orange-amber */
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition {
+  color: #a9b97c; /* olive */
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-symbol,
+.hljs-bullet {
+  color: #dd8a72; /* terracotta */
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-meta {
+  color: #968a7c; /* taupe */
+  font-style: italic;
+}
+
+.hljs-title,
+.hljs-name {
+  color: #e8c47c; /* gold: function, class and tag names */
+}
+
+.hljs-built_in,
+.hljs-type,
+.hljs-selector-class,
+.hljs-selector-id {
+  color: #cfa0bd; /* mauve */
+}
+
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attr,
+.hljs-attribute {
+  color: #dcb48c; /* sand */
+}
+
+.hljs-deletion {
+  color: #dd8a72;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: 600;
+}
