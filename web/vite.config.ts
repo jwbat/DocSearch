@@ -13,4 +13,11 @@ export default defineConfig({
     strictPort: true,
     allowedHosts: ['jamess-macbook-pro.local'],
   },
+  build: {
+    // The one chunk over Vite's default 500 kB is MarkdownView (~505 kB,
+    // mostly highlight.js grammars). It loads lazily on the first markdown
+    // open, not with the page, so its size is accepted. The limit sits just
+    // above it so any other chunk growing that large still warns.
+    chunkSizeWarningLimit: 600,
+  },
 })

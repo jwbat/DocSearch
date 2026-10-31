@@ -211,11 +211,20 @@ Done:
 - **Text cache** (`Viewer.tsx`): loaded markdown is kept in memory, keyed by
   manifest `sha256`, so revisiting is instant and never stale. It is
   memory-only, so a reload empties it.
+- **Open file button** (`Viewer.tsx`): types without a preview (PDF, PNG,
+  …) show **Open file ↗**, which opens the file in a new tab. Each tap
+  fetches a fresh presigned URL (they last 5 minutes); the tab opens before
+  the fetch so Safari doesn't block it as a popup.
+- **Code-split** (`MarkdownView.tsx`): the markdown renderer and highlight
+  theme load lazily on the first markdown open. Page load is ~72 KB gzipped
+  (was ~227 KB); the markdown chunk is ~155 KB gzipped.
+  `chunkSizeWarningLimit` in `vite.config.ts` is 600 kB so that chunk
+  (~505 kB minified) doesn't warn.
 
 Not done yet:
 - **Set aside for now (the user will come back to them):** PNG/JPG viewing,
-  PDF viewing (currently "No preview for this file type yet"), and markdown
-  relative images. Plain text is also still to do.
+  PDF viewing (for now, the Open file button), and markdown relative
+  images and links (no docs use them yet). Plain text is also still to do.
 - **Markdown, still open:** relative images (`![](img/x.png)`) need the
   `/file-url` lookup, and relative links between docs need hash routing.
   Both are still broken.
@@ -226,8 +235,6 @@ Not done yet:
   when stepping with the arrows (it opens at the top now); keep the text
   cache in `sessionStorage` so it survives a reload.
 - **Later, if wanted:** draggable tree-pane width.
-- **Before Phase 6:** code-split the markdown renderer (the bundle is
-  ~225 KB gzipped, and the build warns about chunk size).
 
 ## Phase 6 — Hosting and docs
 

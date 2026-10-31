@@ -1,29 +1,15 @@
-import { useEffect, useState } from 'react'
-import Markdown from 'react-markdown'
-import rehypeHighlight from 'rehype-highlight'
-import rehypeRaw from 'rehype-raw'
-import rehypeSanitize from 'rehype-sanitize'
-import remarkGfm from 'remark-gfm'
+import { lazy, Suspense, useEffect, useState } from 'react'
 
 import { getFileUrl, type ManifestItem } from './api'
 import './Viewer.css'
-import './highlight.css'
+
+// The markdown renderer is a separate chunk, fetched on first use.
+const MarkdownView = lazy(() => import('./MarkdownView'))
 
 type State =
   | { status: 'loading' }
   | { status: 'ready'; text: string }
   | { status: 'error'; message: string }
-
-// Inline HTML in markdown (<br>, <sup>, <details>, …) renders the way it does
-// on GitHub: rehype-raw parses it, and rehype-sanitize then strips anything
-// unsafe (scripts, event handlers, iframes) using GitHub's own allowlist.
-//
-// Fenced code blocks with a language tag (```python, ```bash, ```go, …) are
-// then syntax-highlighted by rehype-highlight; untagged blocks stay plain.
-//
-// Order matters: sanitize runs after raw, and highlight runs last so the
-// sanitizer doesn't strip its class names.
-const rehypePlugins = [rehypeRaw, rehypeSanitize, rehypeHighlight]
 
 // Text of every file loaded so far, keyed by its sha256 from the manifest.
 // Going back to a file is then instant, and never stale: an edit gives the
@@ -40,7 +26,7 @@ function isMarkdown(item: ManifestItem): boolean {
 // from S3. The parent keys this component by path, so selecting another
 // file starts over with fresh state. Files seen before come from textCache.
 //
-// Only markdown renders so far; other types get a placeholder.
+// Only markdown renders so far; other types get an "Open file" button.
 export function Viewer({ item }: { item: ManifestItem }) {
   const [state, setState] = useState<State>(() => {
     const text = textCache.get(item.sha256)
@@ -69,17 +55,46 @@ export function Viewer({ item }: { item: ManifestItem }) {
     return () => controller.abort()
   }, [item])
 
-  if (!isMarkdown(item)) {
-    return <p className="placeholder">No preview for this file type yet.</p>
-  }
+  if (!isMarkdown(item)) return <OpenFile item={item} />
   if (state.status === 'loading') return <p className="placeholder">Loading…</p>
   if (state.status === 'error') return <p className="viewer-error">{state.message}</p>
 
   return (
-    <article className="markdown">
-      <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={rehypePlugins}>
-        {state.text}
-      </Markdown>
-    </article>
+    <Suspense fallback={<p className="placeholder">Loading…</p>}>
+      <MarkdownView text={state.text} />
+    </Suspense>
+  )
+}
+
+// OpenFile stands in for a preview: the browser shows PDFs and images well
+// in a tab of its own. Presigned URLs only last a few minutes, so a fresh one
+// is fetched on each tap rather than when the file opens. The tab is opened
+// before the fetch, while still inside the tap, or Safari blocks it as a
+// popup; it is then pointed at the URL once that arrives.
+function OpenFile({ item }: { item: ManifestItem }) {
+  const [error, setError] = useState<string | null>(null)
+
+  function open() {
+    setError(null)
+    const tab = window.open('', '_blank')
+    getFileUrl(item.path)
+      .then(({ url }) => {
+        if (tab) tab.location.href = url
+        else window.location.href = url
+      })
+      .catch((err: unknown) => {
+        tab?.close()
+        setError(err instanceof Error ? err.message : String(err))
+      })
+  }
+
+  return (
+    <div className="open-file">
+      <p className="placeholder">No preview for this file type yet.</p>
+      <button type="button" className="open-file-button" onClick={open}>
+        Open file ↗
+      </button>
+      {error && <p className="viewer-error">{error}</p>}
+    </div>
   )
 }

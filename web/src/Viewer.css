@@ -123,3 +123,19 @@
 .markdown img {
   max-width: 100%;
 }
+
+/* "Open file" for types without a preview. Sized as a 44px tap target. */
+.open-file-button {
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.open-file-button:hover {
+  border-color: var(--accent);
+}
