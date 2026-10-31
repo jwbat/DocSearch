@@ -23,7 +23,7 @@ there is a real, deployed API for it to call.
 | 1 | API access control | No auth. An unguessable URL plus API Gateway throttling is enough; the docs aren't sensitive. |
 | 2 | Lambda code and build | One Lambda serves both routes, switching on the request path. Its entry point is `go_files/cmd/api-lambda/` and it shares `internal/`. CDK builds it with Docker bundling. |
 | 3 | API Gateway flavor | HTTP API (v2). |
-| 4 | Frontend hosting | S3 + CloudFront, defined in CDK. |
+| 4 | Frontend hosting | S3 + CloudFront, defined in CDK. CloudFront also fronts the API (same origin), so the hosted app has no API URL to configure. CDK builds `web/dist`. |
 | 5 | Deploy target | `AWS_PROFILE=personal`, `us-west-2`. Pin `env=cdk.Environment(...)` in `app.py`. |
 | 6 | Frontend tooling | Vite + React + TypeScript, plain CSS, responsive and mobile-friendly. Markdown is rendered with `react-markdown` + `remark-gfm`, with syntax highlighting for fenced code blocks (`` ```python ``). Relative images in markdown load through `/file-url`. Relative links open the linked file in the viewer, and the browser Back button returns to the previous page. |
 | 7 | Search | Out of scope. Navigation is a drill-down disclosure tree only, with no search and no filename filter. |
@@ -108,7 +108,9 @@ there is a real, deployed API for it to call.
       `http://jamess-macbook-pro.local:5173` (the dev server as reached from
       an iPhone on the LAN), and the CloudFront origin. All three come from
       `FRONTEND_ORIGINS` in `app.py`. The
-      CloudFront origin is added in Phase 6.
+      CloudFront origin is added in Phase 6. (The hosted app reaches the API
+      through CloudFront at its own origin, so only the docs bucket strictly
+      needs that entry; it's harmless on the API.)
     - No authorizer. Set default-stage throttling (rate and burst limits) as
       the cost and abuse guard.
 12. **Docs bucket CORS.** The browser `fetch()`es markdown and plain-text
@@ -241,14 +243,31 @@ Not done yet:
 22. **Frontend hosting** in `DocSearchWebStack`:
     - A private S3 site bucket and a CloudFront distribution using Origin
       Access Control, with the default root object set to `index.html`.
-    - Deploy the output of `npm run build` (`web/dist`) with
-      `BucketDeployment`.
-    - Give the build the API URL. Either set `VITE_API_URL` at build time, or
-      have `BucketDeployment` write a `config.json` from the `ApiUrl` value so
-      the bundle doesn't need rebuilding per environment.
-    - Add the CloudFront origin to the API CORS rules and the docs bucket CORS
-      rules.
-    - Confirm before running `cdk deploy`.
+    - **The API goes through CloudFront too (same origin).** Two extra
+      behaviors send `/manifest` and `/file-url` to the HTTP API, with
+      caching off and query strings forwarded. The hosted app calls the API
+      at its own origin, so the production build needs no API URL and the
+      API needs no CORS entry for CloudFront. `api.ts` falls back to the
+      page's origin when `VITE_API_URL` is unset. Dev is unchanged: it reads
+      `VITE_API_URL` from `.env.local` (which must not leak into the
+      production build).
+    - **CDK builds the frontend.** The `web/dist` asset is bundled by running
+      `npm run build` locally, the same way the Go Lambda is built, so a
+      deploy can't ship a stale `dist/`. `BucketDeployment` uploads it.
+    - **Docs bucket CORS takes two deploys.** The browser fetches files
+      straight from the docs bucket by presigned URL, so that bucket's CORS
+      must allow the CloudFront origin. The bucket is in `DocSearchStack`,
+      which `DocSearchWebStack` already depends on, so passing the domain
+      back would be a cross-stack cycle. Instead: deploy, read the
+      `xxxx.cloudfront.net` domain from the stack output, add it to
+      `FRONTEND_ORIGINS` in `cdk/app.py`, and deploy both stacks again. The
+      domain is stable for the life of the distribution.
+    - Steps: (a) add the hosting resources and synth, then review
+      `web.yaml`; (b) deploy `DocSearchWebStack`; (c) add the CloudFront
+      origin to `FRONTEND_ORIGINS` and deploy both stacks; (d) test on the
+      MacBook and the iPhone.
+    - **The user runs `cdk deploy` themselves.** Claude prepares and synths;
+      the user deploys.
 23. **Update docs.**
     - `README.md`: move the read path out of "TODO" and "What Is Not Built
       Yet", note that search is not planned, describe the two stacks, and add
