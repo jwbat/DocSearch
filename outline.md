@@ -178,7 +178,7 @@ there is a real, deployed API for it to call.
     light/dark), tap targets on mobile, and showing metadata (size, modified
     time).
 
-### Phase 5 progress (as of 2026-10-30)
+### Phase 5 progress (as of 2026-10-31)
 
 Working in very small steps, checked on a MacBook and an iPhone 17 (dev
 server at `http://jamess-macbook-pro.local:5173`). Style: warm dark theme,
@@ -199,15 +199,32 @@ Done:
   `/file-url`, then render with `react-markdown` + `remark-gfm`. Inline HTML
   such as `<br>` via `rehype-raw` + `rehype-sanitize`. Syntax highlighting
   via `rehype-highlight` with a custom warm theme in `highlight.css`.
+- **Reload keeps the open file** (`App.tsx`): the selected path is in the
+  URL hash (`replaceState`, no history entries). On load, if the path is
+  still in the fresh manifest, the file reopens (refetched) with its folders
+  expanded; otherwise the tree shows.
+- **← → visited-file arrows** at the right of the header (`App.tsx`,
+  `App.css`): each file appears once, and picking one in the tree moves it
+  to the end. The arrows only ever open files, never the tree. The list is
+  kept in `sessionStorage`: a reload from a file view keeps it, and a reload
+  from the tree view clears it.
+- **Text cache** (`Viewer.tsx`): loaded markdown is kept in memory, keyed by
+  manifest `sha256`, so revisiting is instant and never stale. It is
+  memory-only, so a reload empties it.
 
 Not done yet:
-- **Next, either:** PNG/JPG viewing or PDF viewing (currently "No preview for
-  this file type yet"). Plain text is also still to do.
+- **Set aside for now (the user will come back to them):** PNG/JPG viewing,
+  PDF viewing (currently "No preview for this file type yet"), and markdown
+  relative images. Plain text is also still to do.
 - **Markdown, still open:** relative images (`![](img/x.png)`) need the
   `/file-url` lookup, and relative links between docs need hash routing.
   Both are still broken.
-- **Hash routing:** selected file in the URL, Back/Forward, deep links that
-  expand the folders on the path.
+- **Hash routing, the rest:** the path in the URL and deep links that expand
+  folders are done. Still open: browser Back/Forward entries (`pushState`,
+  which would also give iPhone swipe-back) and links between docs.
+- **Small ideas, if wanted:** remember the scroll position for each file
+  when stepping with the arrows (it opens at the top now); keep the text
+  cache in `sessionStorage` so it survives a reload.
 - **Later, if wanted:** draggable tree-pane width.
 - **Before Phase 6:** code-split the markdown renderer (the bundle is
   ~225 KB gzipped, and the build warns about chunk size).

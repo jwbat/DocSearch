@@ -46,6 +46,31 @@
   font-size: 0.875rem;
 }
 
+.history {
+  display: flex;
+  /* Pulls the last button's padding flush with the header's edge. */
+  margin-right: -0.5rem;
+}
+
+.history button {
+  /* 44px square: Apple's minimum comfortable tap target. */
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.history button:disabled {
+  color: var(--text-muted);
+  opacity: 0.4;
+  cursor: default;
+}
+
 .back {
   display: none;
   /* At least 44px tall: Apple's minimum comfortable tap target. */
