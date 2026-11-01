@@ -61,9 +61,11 @@ describe('api client', () => {
     await expect(getManifest()).rejects.toMatchObject({ status: 502, message: 'Bad Gateway' })
   })
 
-  it('fails clearly when VITE_API_URL is missing', async () => {
+  it("uses the page's own origin when VITE_API_URL is unset", async () => {
     vi.stubEnv('VITE_API_URL', '')
-    await expect(getManifest()).rejects.toThrow(/VITE_API_URL/)
-    expect(fetchMock).not.toHaveBeenCalled()
+    vi.stubGlobal('window', { location: { origin: 'https://site.example.test' } })
+    fetchMock.mockResolvedValue(jsonResponse(200, []))
+    await getManifest()
+    expect(String(fetchMock.mock.calls[0][0])).toBe('https://site.example.test/manifest')
   })
 })

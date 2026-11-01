@@ -13,6 +13,7 @@ Resources:
             AllowedOrigins:
               - http://localhost:5173
               - http://jamess-macbook-pro.local:5173
+              - https://do5al0s1ozgt6.cloudfront.net
             MaxAge: 3600
       LifecycleConfiguration:
         Rules:

@@ -2,8 +2,9 @@
 
 interface ImportMetaEnv {
   // Base URL of the DocSearch HTTP API, e.g. the ApiUrl output of
-  // DocSearchWebStack. Set in .env.local (git-ignored).
-  readonly VITE_API_URL: string
+  // DocSearchWebStack. Set for dev only, in .env.development.local
+  // (git-ignored). Unset in the hosted build, which uses its own origin.
+  readonly VITE_API_URL?: string
 }
 
 interface ImportMeta {

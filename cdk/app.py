@@ -11,11 +11,19 @@ ENV = cdk.Environment(account="559612528400", region="us-west-2")
 
 # Browser origins allowed to call the API and read presigned URLs. The
 # .local name is the Vite dev server as reached from other devices on the
-# LAN (e.g. an iPhone); it survives DHCP handing the Mac a new IP. The
-# CloudFront origin is added once frontend hosting exists.
+# LAN (e.g. an iPhone); it survives DHCP handing the Mac a new IP.
+#
+# The CloudFront origin is the hosted site (the SiteUrl output of
+# DocSearchWebStack). It's written out rather than passed from that stack
+# because the docs bucket lives in DocSearchStack, which the web stack
+# already depends on; the reverse reference would be a cycle. The domain
+# stays the same for the life of the distribution. The hosted app reaches the
+# API through CloudFront at its own origin, so strictly only the docs bucket
+# needs this entry.
 FRONTEND_ORIGINS = [
     "http://localhost:5173",
     "http://jamess-macbook-pro.local:5173",
+    "https://do5al0s1ozgt6.cloudfront.net",
 ]
 
 app = cdk.App()

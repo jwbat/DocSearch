@@ -11,7 +11,7 @@ Requires Node 20.19+ or 22.12+ (Vite 8).
 
 ```
 npm install
-cp .env.example .env.local   # then set VITE_API_URL to the ApiUrl stack output
+cp .env.example .env.development.local   # then set VITE_API_URL to the ApiUrl stack output
 ```
 
 ## Commands

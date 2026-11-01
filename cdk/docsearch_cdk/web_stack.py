@@ -15,10 +15,13 @@ from aws_cdk import (
 )
 from aws_cdk import aws_apigatewayv2 as apigw
 from aws_cdk import aws_apigatewayv2_integrations as integrations
+from aws_cdk import aws_cloudfront as cloudfront
+from aws_cdk import aws_cloudfront_origins as origins
 from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
+from aws_cdk import aws_s3_deployment as s3deploy
 from constructs import Construct
 
 # The Go module that holds both the CLI and the Lambda entry point.
@@ -28,6 +31,13 @@ GO_SRC = Path(__file__).resolve().parents[2] / "go_files"
 # what the provided.al2023 runtime executes.
 GO_BUILD_ENV = {"GOOS": "linux", "GOARCH": "arm64", "CGO_ENABLED": "0"}
 GO_PACKAGE = "./cmd/api-lambda"
+
+# The React frontend, built with `npm run build` into the site bucket.
+WEB_SRC = Path(__file__).resolve().parents[2] / "web"
+
+# API routes CloudFront forwards to the HTTP API. They must match the routes
+# added below; everything else is served from the site bucket.
+API_PATHS = ("/manifest", "/file-url")
 
 
 @jsii.implements(ILocalBundling)
@@ -49,10 +59,30 @@ class _LocalGoBuild:
         return True
 
 
+@jsii.implements(ILocalBundling)
+class _LocalWebBuild:
+    """Builds the frontend with the local npm and the existing node_modules
+    (run `npm install` in web/ first), so synth and deploy don't need Docker.
+    `npm run build` type-checks, then Vite writes straight into the asset
+    directory. Vite reads .env.development.local only in dev mode, so the
+    dev API URL never reaches this build."""
+
+    def try_bundle(self, output_dir, *args, **kwargs):
+        if shutil.which("npm") is None:
+            return False
+        subprocess.run(
+            ["npm", "run", "build", "--", "--outDir", output_dir, "--emptyOutDir"],
+            cwd=WEB_SRC,
+            check=True,
+        )
+        return True
+
+
 class DocSearchWebStack(Stack):
     """Read path for Doc Search: one Go Lambda behind an HTTP API (v2),
-    serving GET /manifest and GET /file-url. Frontend hosting (S3 +
-    CloudFront) joins this stack later.
+    serving GET /manifest and GET /file-url, and the React frontend in a
+    private S3 bucket behind CloudFront. CloudFront also forwards the API
+    routes, so the hosted app calls the API at its own origin.
 
     Everything here is read-only against the storage stack's bucket and
     table — the CLI remains the only write path.
@@ -142,7 +172,83 @@ class DocSearchWebStack(Stack):
         )
 
         integration = integrations.HttpLambdaIntegration("ApiIntegration", api_fn)
-        for path in ("/manifest", "/file-url"):
+        for path in API_PATHS:
             api.add_routes(path=path, methods=[apigw.HttpMethod.GET], integration=integration)
 
+        # --- Frontend hosting ---
+
+        # Holds only build output, which every deploy re-uploads, so unlike
+        # the docs bucket it is safe to delete along with the stack.
+        site_bucket = s3.Bucket(
+            self,
+            "SiteBucket",
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
+            enforce_ssl=True,
+            removal_policy=RemovalPolicy.DESTROY,
+            auto_delete_objects=True,
+        )
+
+        # The API as a CloudFront origin. Caching is off (presigned URLs
+        # must be fresh, and the manifest changes on every sync), and every
+        # viewer header except Host is forwarded along with the query string
+        # (/file-url?path=…). API Gateway needs its own Host header.
+        api_behavior = cloudfront.BehaviorOptions(
+            origin=origins.HttpOrigin(
+                f"{api.api_id}.execute-api.{self.region}.amazonaws.com",
+            ),
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+        )
+
+        distribution = cloudfront.Distribution(
+            self,
+            "SiteDistribution",
+            default_root_object="index.html",
+            default_behavior=cloudfront.BehaviorOptions(
+                origin=origins.S3BucketOrigin.with_origin_access_control(site_bucket),
+                viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            ),
+            additional_behaviors={path: api_behavior for path in API_PATHS},
+            # North America and Europe edge locations only; the cheapest
+            # class, and the reader is in the US.
+            price_class=cloudfront.PriceClass.PRICE_CLASS_100,
+        )
+
+        site = s3deploy.Source.asset(
+            str(WEB_SRC),
+            # Only source affects the build; keeping the rest out of the
+            # asset hash avoids rebuilding for unrelated changes.
+            exclude=["node_modules", "dist", ".*", "*.md"],
+            bundling=BundlingOptions(
+                local=_LocalWebBuild(),
+                # Fallback when npm isn't installed. Docker gets a clean copy
+                # of the source, without node_modules, so it installs first.
+                image=DockerImage.from_registry("node:24"),
+                environment={"npm_config_cache": "/tmp/npm-cache"},
+                command=[
+                    "bash", "-c",
+                    "npm ci && npm run build -- --outDir /asset-output --emptyOutDir",
+                ],
+            ),
+        )
+
+        s3deploy.BucketDeployment(
+            self,
+            "SiteDeployment",
+            sources=[site],
+            destination_bucket=site_bucket,
+            # Each deploy invalidates CloudFront's cache so the new build
+            # shows up right away instead of after the cache expires.
+            distribution=distribution,
+            distribution_paths=["/*"],
+            # Browsers revalidate every file with the site (a cheap 304 when
+            # unchanged), so a phone never keeps an old index.html after a
+            # deploy. The hashed JS and CSS names already change per build.
+            cache_control=[s3deploy.CacheControl.no_cache()],
+        )
+
+        # The dev server's VITE_API_URL; the hosted app doesn't use it.
         CfnOutput(self, "ApiUrl", value=stage.url)
+        CfnOutput(self, "SiteUrl", value=f"https://{distribution.distribution_domain_name}")

@@ -1,5 +1,7 @@
 // Typed client for the read-only DocSearch API (the Go Lambda behind
-// API Gateway). The base URL comes from VITE_API_URL at build time.
+// API Gateway). In dev the base URL comes from VITE_API_URL (set in
+// .env.development.local). The hosted build leaves it unset: CloudFront
+// serves the API at the site's own origin, so requests go there.
 
 export interface ManifestItem {
   path: string
@@ -27,10 +29,7 @@ export class ApiError extends Error {
 }
 
 function apiBase(): URL {
-  const raw = import.meta.env.VITE_API_URL
-  if (!raw) {
-    throw new Error('VITE_API_URL is not set (see web/.env.example)')
-  }
+  const raw = import.meta.env.VITE_API_URL || window.location.origin
   // A trailing slash makes relative paths resolve under the base instead of
   // replacing its last segment.
   return new URL(raw.endsWith('/') ? raw : `${raw}/`)
