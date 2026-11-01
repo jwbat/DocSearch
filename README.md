@@ -27,7 +27,7 @@ same S3 bucket and DynamoDB table but are otherwise independent.
 
 ## Write Path (CLI only)
 
-The CLI is the sole writer. It runs locally with your own AWS credentials and
+The CLI is the sole writer. It runs locally, requiring AWS credentials, and
 talks to S3 and DynamoDB directly via the AWS SDK — no Lambda or API Gateway
 is involved in this path.
 
