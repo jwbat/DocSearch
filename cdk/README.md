@@ -67,7 +67,7 @@ cdk bootstrap
 ## Deploy
 
 ```bash
-cdk diff --all                          # see what would change, good habit before every deploy
+AWS_PROFILE=personal cdk diff           # every stack (diff has no --all); good habit before every deploy
 AWS_PROFILE=personal cdk deploy --all   # DocSearchStack first, then DocSearchWebStack
 ```
 

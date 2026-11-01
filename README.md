@@ -164,7 +164,7 @@ in `web/` (to build the frontend; Docker is the fallback).
 cd cdk/
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cdk diff --all                          # review first
+AWS_PROFILE=personal cdk diff           # review first (diffs every stack; no --all needed)
 AWS_PROFILE=personal cdk deploy --all   # deploys DocSearchStack, then DocSearchWebStack
 ```
 

@@ -12,7 +12,7 @@ Two stacks for DocSearch. See `README.md` for setup/deploy commands.
 ## Guardrails
 
 - `cdk deploy` and `cdk destroy` act on real AWS infrastructure. The user
-  runs them. Prepare the change, run `cdk synth` / `cdk diff --all` (both
+  runs them. Prepare the change, run `cdk synth` / `cdk diff` (both
   read-only), and hand over the command, e.g.
   `AWS_PROFILE=personal cdk deploy --all`.
 - The docs bucket and DynamoDB table in `DocSearchStack` use `RemovalPolicy.RETAIN`. This is
