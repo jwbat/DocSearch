@@ -5,8 +5,10 @@ diffs it against the DynamoDB manifest by content hash, and pushes
 changes (and only changes) directly to S3 + DynamoDB via the AWS SDK.
 
 This talks to AWS directly with your own credentials — there's no Lambda
-or API Gateway in this path. Those only exist for the read-only web
-frontend later.
+or API Gateway in this path. Those exist only for the read-only web
+frontend: the same module holds the API Lambda (`cmd/api-lambda/`,
+handlers in `internal/api/`), which CDK builds and deploys with
+`DocSearchWebStack` (see `../cdk/README.md`).
 
 ## Setup
 

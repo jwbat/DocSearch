@@ -1,6 +1,8 @@
-# Doc Search — CDK (storage layer)
+# Doc Search — CDK
 
-This stack currently creates only the two storage resources the CLI needs:
+Two stacks, both pinned to one account and `us-west-2` in `app.py`.
+
+**`DocSearchStack`** — storage, used by the CLI and read by the API:
 
 - An S3 bucket (versioned, encrypted, all public access blocked) — holds
   file content, keyed by path. A lifecycle rule expires noncurrent
@@ -17,16 +19,39 @@ experimentation, change `removal_policy` to `RemovalPolicy.DESTROY` in
 `docsearch_cdk/docsearch_stack.py` — just switch it back before you start
 relying on this for anything real.
 
-No Lambda or API Gateway yet — the CLI (in `../go_files`) talks to S3 and
-DynamoDB directly with your own AWS credentials. Those pieces get added
-once the read-only web frontend needs a way in without holding
-credentials itself.
+**`DocSearchWebStack`** — the read path (`docsearch_cdk/web_stack.py`):
+
+- A Go Lambda (`../go_files/cmd/api-lambda`) behind an HTTP API (v2),
+  serving `GET /manifest` and `GET /file-url`. It has read-only access to
+  the bucket and table. No authorizer; stage throttling is the guard.
+- A private site bucket holding the built React app (`../web`), and a
+  CloudFront distribution in front of it (Origin Access Control). CloudFront
+  also forwards `/manifest` and `/file-url` to the HTTP API, uncached, so
+  the hosted app calls the API at its own origin.
+- A `BucketDeployment` that uploads the app and invalidates CloudFront on
+  every deploy.
+
+Everything in this stack is disposable (the site bucket is
+`RemovalPolicy.DESTROY` with auto-delete). The CLI (in `../go_files`) still
+talks to S3 and DynamoDB directly with your own AWS credentials; only the
+web frontend goes through the API.
+
+**Builds happen during synth.** CDK builds the Lambda with the local Go
+toolchain and the frontend with the local npm (`npm run build` in `../web`,
+which needs `npm install` there first). Each falls back to a Docker build
+if the tool isn't installed.
+
+**CORS origins** come from `FRONTEND_ORIGINS` in `app.py`, shared by the
+docs bucket and the API: the Vite dev server (`localhost` and the Mac's
+`.local` name) and the CloudFront domain. The CloudFront domain is written
+out by hand because passing it from `DocSearchWebStack` back to the docs
+bucket would be a cross-stack cycle.
 
 ## Setup
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate      # .venv\Scripts\activate on Windows
+python3 -m venv venv
+source venv/bin/activate       # venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
 brew install aws-cdk
@@ -42,27 +67,26 @@ cdk bootstrap
 ## Deploy
 
 ```bash
-cdk diff      # see what would change, good habit before every deploy
-cdk deploy
+cdk diff --all                          # see what would change, good habit before every deploy
+AWS_PROFILE=personal cdk deploy --all   # DocSearchStack first, then DocSearchWebStack
 ```
 
-`cdk deploy` will print the real bucket and table names as outputs
-(`BucketName`, `TableName`) — these are CDK-generated names with a random
-suffix, not anything you choose by hand. Copy them into the CLI's
-environment:
+Outputs:
 
-```bash
-export DOCSEARCH_BUCKET=<value of BucketName output>
-export DOCSEARCH_TABLE=<value of TableName output>
-```
+- `DocSearchStack`: `BucketName` and `TableName` — CDK-generated names with
+  a random suffix. Copy them into the CLI's environment:
+
+  ```bash
+  export DOCSEARCH_BUCKET=<value of BucketName output>
+  export DOCSEARCH_TABLE=<value of TableName output>
+  ```
+
+- `DocSearchWebStack`: `SiteUrl` (the web app) and `ApiUrl` (the API's own
+  URL, used only as `VITE_API_URL` for the dev server).
 
 ## Validate without deploying
 
 ```bash
-cdk synth      # renders the CloudFormation template, catches config errors
+cdk synth             # renders the CloudFormation templates, catches config errors
+./synth.sh            # writes storage.yaml and web.yaml, for reviewing diffs in git
 ```
-
-This was run and checked during development — `cdk synth` produces
-exactly one `AWS::S3::Bucket`, one `AWS::DynamoDB::Table`, and the two
-expected outputs, with the properties above confirmed in the synthesized
-template.

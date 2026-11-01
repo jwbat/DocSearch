@@ -4,15 +4,38 @@ Scope: a Go Lambda function, API Gateway, and the React web frontend, as
 described in the "Read Path" section of `README.md`. The write path (CLI, S3,
 DynamoDB) already exists and is not changed except where noted.
 
-**Status (2026-10-28):** Phases 1–4 are done and deployed. Next is Phase 5:
-`web/src/App.tsx` is still the Phase 4 placeholder that lists top-level
-folders. Run `npm run dev` in `web/` and open
-`http://jamess-macbook-pro.local:5173/` on the iPhone. The IP address won't
+**Status (2026-10-31):** All six phases are done. The app is live at
+`https://do5al0s1ozgt6.cloudfront.net`, checked on the MacBook and the
+iPhone, and the docs are updated. Remaining work is in **Todo** below.
+For dev, run `npm run dev` in `web/` and open
+`http://jamess-macbook-pro.local:5173/` on the iPhone; the IP address won't
 work, because it isn't an allowed CORS origin.
 
 The order goes from the bottom of the stack up. Each layer is tested before
 the next one is built on top of it, so the React app is only started once
 there is a real, deployed API for it to call.
+
+---
+
+## Todo
+
+Deferred items and small fixes from real use. Add new ones here.
+
+- **PDF and image viewing:** PNG/JPG and PDF open in a new tab via the
+  Open file button for now; inline viewing is deferred. Mobile browsers
+  handle inline PDFs inconsistently.
+- **Plain text:** fetch and show in a `<pre>`; currently gets Open file.
+- **Relative images and links in markdown** (no docs use them yet):
+  images (`![](img/x.png)`) need the `/file-url` lookup; links between
+  docs need hash routing to open in the viewer.
+- **Back/Forward history:** the path is in the URL hash, but with
+  `replaceState`, so there are no history entries. `pushState` would give
+  browser Back/Forward and iPhone swipe-back, and is needed for links
+  between docs.
+- **Small ideas, if wanted:** remember the scroll position for each file
+  when stepping with the arrows (it opens at the top now); keep the text
+  cache in `sessionStorage` so it survives a reload.
+- **Later, if wanted:** draggable tree-pane width.
 
 ---
 
@@ -223,20 +246,7 @@ Done:
   `chunkSizeWarningLimit` in `vite.config.ts` is 600 kB so that chunk
   (~505 kB minified) doesn't warn.
 
-Not done yet:
-- **Set aside for now (the user will come back to them):** PNG/JPG viewing,
-  PDF viewing (for now, the Open file button), and markdown relative
-  images and links (no docs use them yet). Plain text is also still to do.
-- **Markdown, still open:** relative images (`![](img/x.png)`) need the
-  `/file-url` lookup, and relative links between docs need hash routing.
-  Both are still broken.
-- **Hash routing, the rest:** the path in the URL and deep links that expand
-  folders are done. Still open: browser Back/Forward entries (`pushState`,
-  which would also give iPhone swipe-back) and links between docs.
-- **Small ideas, if wanted:** remember the scroll position for each file
-  when stepping with the arrows (it opens at the top now); keep the text
-  cache in `sessionStorage` so it survives a reload.
-- **Later, if wanted:** draggable tree-pane width.
+Remaining items moved to **Todo** at the top of this file.
 
 ## Phase 6 — Hosting and docs
 
@@ -268,6 +278,12 @@ Not done yet:
       MacBook and the iPhone.
     - **The user runs `cdk deploy` themselves.** Claude prepares and synths;
       the user deploys.
+    - **Done (2026-10-31).** Steps (a)–(d) complete. `SiteUrl` is
+      `https://do5al0s1ozgt6.cloudfront.net`; it is in `FRONTEND_ORIGINS`.
+      The dev API URL now lives in `web/.env.development.local` (renamed
+      from `.env.local`). Later deploys are just
+      `AWS_PROFILE=personal cdk deploy --all` from `cdk/`, which rebuilds
+      `web/` and invalidates CloudFront.
 23. **Update docs.**
     - `README.md`: move the read path out of "TODO" and "What Is Not Built
       Yet", note that search is not planned, describe the two stacks, and add
@@ -276,6 +292,9 @@ Not done yet:
       account and region.
     - `go_files/CLAUDE.md`: note that the Lambda binary is a CDK build
       artifact and is *not* moved to `~/.local/bin` the way the CLI is.
+    - **Done (2026-10-31).** Also updated `cdk/README.md` (two stacks),
+      `go_files/README.md` (the Lambda lives in the same module), and
+      `web/README.md` (source layout, hosting).
 
 ---
 

@@ -2,7 +2,7 @@
 
 A personal document storage and retrieval system built on AWS. Documents live
 in a local directory tree, are synced to S3 by a CLI tool, and are browsable
-via a read-only web frontend (not yet implemented).
+via a read-only web frontend hosted on CloudFront.
 
 ---
 
@@ -13,10 +13,10 @@ Local Docs/          CLI (Go)           AWS
 ─────────────        ────────           ───────────────────────────
 coding_notes/    →   hash & diff   →    S3 bucket (content)
   Go/                                   DynamoDB table (manifest)
-  Python/
-recipes/
-music/
-...
+  Python/                                     ↑ read-only
+recipes/                                Lambda (Go) + HTTP API
+music/                                        ↑
+...                                     CloudFront ← browser (React app)
 ```
 
 There are two distinct paths through the system — a **write path** used only
@@ -45,19 +45,20 @@ including a future browser-based one.
 
 ---
 
-## Read Path (web frontend) (TODO)
+## Read Path (web frontend)
 
-The web frontend is read-only and holds no AWS credentials. It reaches the
-document store through two API Gateway endpoints backed by Go Lambda functions.
+The web frontend is read-only and holds no AWS credentials. One CloudFront
+distribution serves both the React app and the API, so the app calls the API
+at its own origin and needs no API URL configured.
 
 ```
-React app
-  │
-  ├── GET /manifest        → Lambda → DynamoDB scan (deleted=false only)
-  │                                   returns flat list of paths + metadata
-  │
-  └── GET /file-url?path=  → Lambda → presigned S3 GET URL
-                                       browser fetches file directly from S3
+browser ── CloudFront ─┬─ /*           → S3 site bucket (built React app)
+                       ├─ /manifest    → HTTP API → Lambda → DynamoDB scan
+                       │                  (deleted=false only; flat list of
+                       │                  paths + metadata)
+                       └─ /file-url    → HTTP API → Lambda → presigned S3 GET URL
+
+browser ── presigned URL ──→ S3 docs bucket (file bytes, fetched directly)
 ```
 
 **`GET /manifest`** returns the full path list with metadata (hash, size,
@@ -66,12 +67,21 @@ from this flat list — splitting each path on `/` and folding into a nested
 structure for the disclosure widget. No separate "list directory" endpoint is
 needed.
 
-**`GET /file-url?path=`** returns a short-lived presigned S3 URL for a single
-file. The file is fetched lazily — only when the user clicks it in the tree.
-File bytes never pass through Lambda or API Gateway.
+**`GET /file-url?path=`** returns a presigned S3 URL, valid for 5 minutes,
+for a single file. The file is fetched lazily — only when the user clicks it
+in the tree. File bytes never pass through Lambda, API Gateway, or
+CloudFront.
 
 Soft-deleted entries are filtered out of `/manifest` by the Lambda handler.
 The web app never sees them.
+
+There is no authentication: the docs aren't sensitive, and the unguessable
+URL plus API Gateway throttling (20 requests/s, burst 50) is the guard.
+CloudFront doesn't cache the API routes.
+
+**Viewer:** markdown renders in-page (GitHub-flavored, with syntax-highlighted
+code blocks). Other types (PDF, images) open in a new browser tab via an
+"Open file" button.
 
 ---
 
@@ -85,6 +95,15 @@ The web app never sees them.
 Both resources use `RemovalPolicy.RETAIN` — destroying the CDK stack will not
 delete the bucket or table or their contents.
 
+### CDK stacks
+
+Both stacks are pinned to one account and `us-west-2` in `cdk/app.py`.
+
+| Stack | Contents |
+|---|---|
+| `DocSearchStack` | Storage: the docs bucket and the manifest table above. |
+| `DocSearchWebStack` | Read path: the API Lambda, the HTTP API, the site bucket, the CloudFront distribution, and the deployment of the built web app. Depends on `DocSearchStack`. Everything here is disposable; redeploying recreates it. |
+
 ---
 
 ## Repository Layout
@@ -92,22 +111,25 @@ delete the bucket or table or their contents.
 ```
 DocSearch/
   README.md                  ← you are here
+  outline.md                 ← read-path implementation plan and progress
 
-  go_files/                  ← CLI tool (Go)
-    main.go
-    go.mod
+  go_files/                  ← Go module: CLI and API Lambda
+    main.go                  ← CLI entry point
+    cmd/api-lambda/          ← Lambda entry point
     internal/
+      api/                   ← /manifest and /file-url handlers
       localfs/               ← walks local directory tree, computes hashes
       manifest/              ← fetches DynamoDB manifest
       syncer/                ← diff logic and S3/DynamoDB write operations
 
   cdk/                       ← infrastructure (Python CDK)
-    app.py
-    requirements.txt
-    cdk.json
+    app.py                   ← account/region pin, CORS origins, both stacks
     docsearch_cdk/
-      docsearch_stack.py     ← S3 bucket + DynamoDB table (storage layer)
-                               Lambda + API Gateway added here later
+      docsearch_stack.py     ← DocSearchStack: docs bucket + manifest table
+      web_stack.py           ← DocSearchWebStack: Lambda, API, site, CloudFront
+    storage.yaml, web.yaml   ← synthesized templates, for review (synth.sh)
+
+  web/                       ← React frontend (Vite + TypeScript)
 ```
 
 ---
@@ -133,25 +155,57 @@ Output markers:
 
 ## Infrastructure Setup
 
-Requires the [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html)
-and an AWS account bootstrapped for CDK (`cdk bootstrap`).
+Requires the [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html),
+an AWS account bootstrapped for CDK (`cdk bootstrap`), Go (to build the
+Lambda; Docker is the fallback), and Node/npm with `npm install` already run
+in `web/` (to build the frontend; Docker is the fallback).
 
 ```bash
 cd cdk/
-python3 -m venv .venv && source .venv/bin/activate
+python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cdk deploy
+cdk diff --all                          # review first
+AWS_PROFILE=personal cdk deploy --all   # deploys DocSearchStack, then DocSearchWebStack
 ```
 
-After deploy, copy the printed `BucketName` and `TableName` output values
-into `DOCSEARCH_BUCKET` and `DOCSEARCH_TABLE`.
+`cdk deploy --all` builds the Lambda and the web app, uploads the app to the
+site bucket, and invalidates CloudFront's cache, so a frontend change only
+needs this one command to go live.
+
+Outputs:
+- `DocSearchStack`: `BucketName` and `TableName` — copy into
+  `DOCSEARCH_BUCKET` and `DOCSEARCH_TABLE` for the CLI.
+- `DocSearchWebStack`: `SiteUrl` — the web app
+  (https://do5al0s1ozgt6.cloudfront.net); `ApiUrl` — the API's own URL, used
+  only by the dev server.
+
+**CORS origins** are listed in `FRONTEND_ORIGINS` in `cdk/app.py`: the dev
+server (`localhost` and the Mac's `.local` name, for testing on a phone) and
+the CloudFront domain. The CloudFront domain is written out by hand because
+passing it from `DocSearchWebStack` to the docs bucket in `DocSearchStack`
+would be a cross-stack cycle. It only changes if the distribution is
+replaced; then update the list and deploy again.
 
 ---
 
-## What Is Not Built Yet
+## Web Frontend Development
 
-- **Lambda functions and API Gateway** — the read path exists in design but
-  not yet in code. The CLI is fully functional without them.
-- **React web frontend** — will consume `/manifest` and `/file-url` once the
-  read API is deployed. The tree view will use a disclosure widget; files will
-  be fetched and rendered lazily on click.
+```bash
+cd web/
+npm install
+cp .env.example .env.development.local   # set VITE_API_URL to the ApiUrl output
+npm run dev                              # http://localhost:5173
+```
+
+The dev server calls the API at `VITE_API_URL`. Vite reads
+`.env.development.local` only in dev mode, so the production build never
+contains it. See `web/README.md` for the other commands.
+
+---
+
+## Not Planned / Deferred
+
+- **Search** is not planned. Navigation is the drill-down tree only.
+- **Deferred viewer work:** inline PDF and image viewing (the "Open file"
+  button stands in), plain-text viewing, and relative images and links inside
+  markdown. See the Todo list at the top of `outline.md`.
