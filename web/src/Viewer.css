@@ -78,6 +78,9 @@
   background: var(--surface);
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 0.875em;
+  /* Inline code in turquoise, between #5fd3c6 and the plain cyan of the
+     rich terminal renderer; about 8:1 against --surface. */
+  color: #5ad3d3;
 }
 
 .markdown pre {
@@ -94,6 +97,9 @@
   padding: 0;
   background: none;
   font-size: 0.875rem;
+  /* Code blocks keep the normal text color plus highlight.css, not the
+     inline turquoise. */
+  color: inherit;
 }
 
 /* Wide tables scroll sideways on their own, like code blocks. */

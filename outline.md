@@ -237,6 +237,10 @@ Done:
 - **Text cache** (`Viewer.tsx`): loaded markdown and plain text are kept in
   memory, keyed by manifest `sha256`, so revisiting is instant and never
   stale. It is memory-only, so a reload empties it.
+- **Styled text in markdown** (`MarkdownView.tsx`): GitHub's sanitize
+  allowlist plus `style` on `<span>` and `<div>`, e.g.
+  `<span style="color: #ff1522">`. Scripts and event handlers are still
+  stripped (`MarkdownView.test.tsx`). Pick light colors: the theme is dark.
 - **Inline images** (`Viewer.tsx`): PNG, JPG, GIF, WebP, and SVG show inline,
   scaled down to the pane's width (never up); tall ones scroll. Each is
   fetched as a blob and kept as an object URL keyed by `sha256`, since a

@@ -1,7 +1,7 @@
-import Markdown from 'react-markdown'
+import Markdown, { type Options } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
-import rehypeSanitize from 'rehype-sanitize'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import remarkGfm from 'remark-gfm'
 
 import './highlight.css'
@@ -10,12 +10,26 @@ import './highlight.css'
 // on GitHub: rehype-raw parses it, and rehype-sanitize then strips anything
 // unsafe (scripts, event handlers, iframes) using GitHub's own allowlist.
 //
+// One addition to that allowlist: a style attribute on <span> and <div>, so
+// a doc can color or otherwise style its own text, e.g.
+// <span style="color: #ff1522">. CSS can't run script, and the docs are our
+// own. GitHub and other viewers drop the style and show the text plain.
+//
 // Fenced code blocks with a language tag (```python, ```bash, ```go, …) are
 // then syntax-highlighted by rehype-highlight; untagged blocks stay plain.
 //
 // Order matters: sanitize runs after raw, and highlight runs last so the
 // sanitizer doesn't strip its class names.
-const rehypePlugins = [rehypeRaw, rehypeSanitize, rehypeHighlight]
+const sanitizeSchema = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    span: [...(defaultSchema.attributes?.span ?? []), 'style'],
+    div: [...(defaultSchema.attributes?.div ?? []), 'style'],
+  },
+}
+
+const rehypePlugins: Options['rehypePlugins'] = [rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeHighlight]
 
 // MarkdownView renders markdown text. It is most of the app's code by weight
 // (the parser, sanitizer, and highlight.js grammars), so Viewer loads it
