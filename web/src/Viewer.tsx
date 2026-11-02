@@ -70,12 +70,52 @@ export function Viewer({ item }: { item: ManifestItem }) {
   if (state.status === 'error') return <p className="viewer-error">{state.message}</p>
 
   // Plain text needs no renderer, so it skips the markdown chunk.
-  if (isPlainText(item)) return <pre className="plain-text">{state.text}</pre>
+  if (isPlainText(item)) return <PlainTextView text={state.text} />
 
   return (
     <Suspense fallback={<p className="placeholder">Loading…</p>}>
       <MarkdownView text={state.text} />
     </Suspense>
+  )
+}
+
+// The wrap choice for plain text is a reader preference, not per file, so it
+// is kept in localStorage: it holds across files, reloads, and visits.
+const WRAP_KEY = 'docsearch.wrapText'
+
+function loadWrap(): boolean {
+  return localStorage.getItem(WRAP_KEY) !== 'false'
+}
+
+// PlainTextView shows a text file as-is, with a toggle for line wrapping.
+// Wrapping (the default) keeps everything in view, but on a phone a wrapped
+// line looks like a line break of the file's own; unwrapped, each line stays
+// one line and the block scrolls sideways instead.
+function PlainTextView({ text }: { text: string }) {
+  const [wrap, setWrap] = useState(loadWrap)
+
+  function toggle() {
+    const next = !wrap
+    setWrap(next)
+    localStorage.setItem(WRAP_KEY, String(next))
+  }
+
+  return (
+    <div className="plain-text">
+      <div className="plain-text-toolbar">
+        <button
+          type="button"
+          className="wrap-toggle"
+          aria-pressed={wrap}
+          aria-label="Wrap lines"
+          title="Wrap lines"
+          onClick={toggle}
+        >
+          ↴
+        </button>
+      </div>
+      <pre className={wrap ? 'wrap' : undefined}>{text}</pre>
+    </div>
   )
 }
 

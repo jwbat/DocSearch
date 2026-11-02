@@ -233,8 +233,10 @@ Done:
   kept in `sessionStorage`: a reload from a file view keeps it, and a reload
   from the tree view clears it.
 - **Plain text** (`Viewer.tsx`, `Viewer.css`): `text/plain` files (`.txt`)
-  are fetched like markdown and shown in a `<pre>` — monospace, long lines
-  wrapped, ~80-column measure. No markdown chunk is loaded for them.
+  are fetched like markdown and shown in a `<pre>` — monospace, ~80-column
+  measure. No markdown chunk is loaded for them. A **↴** (wrap lines) toggle
+  above the text switches between wrapping (the default) and one line per
+  line with sideways scrolling; the choice is kept in `localStorage`.
 - **Text cache** (`Viewer.tsx`): loaded markdown and plain text are kept in
   memory, keyed by manifest `sha256`, so revisiting is instant and never
   stale. It is memory-only, so a reload empties it.

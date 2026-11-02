@@ -124,18 +124,53 @@
   max-width: 100%;
 }
 
-/* Plain text files, shown as-is in monospace. Long lines wrap rather than
-   scroll: a .txt is prose more often than code, and sideways scrolling is
-   awkward on a phone. The measure is a little wider than markdown's to fit
-   the usual 80-column hard wrap. */
+/* Plain text files, shown as-is in monospace. The measure is a little wider
+   than markdown's to fit the usual 80-column hard wrap. */
 .plain-text {
   max-width: 82ch;
   margin: 0 auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+}
+
+.plain-text pre {
+  margin: 0;
+  /* Unwrapped, long lines scroll sideways inside the block, not the page. */
+  overflow-x: auto;
   font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   font-size: 0.875rem;
   line-height: 1.5;
+}
+
+.plain-text pre.wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.plain-text-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+/* A toggle: accent-tinted while wrapping is on. 44px square, Apple's
+   minimum comfortable tap target. */
+.wrap-toggle {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.wrap-toggle[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 /* "Open file" for types without a preview. Sized as a 44px tap target. */
