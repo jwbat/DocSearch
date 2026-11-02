@@ -31,7 +31,7 @@ function isText(item: ManifestItem): boolean {
 }
 
 // Image types every browser can show. Others (HEIC, say) get "Open file".
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml']
 
 function isImage(item: ManifestItem): boolean {
   return IMAGE_TYPES.some((type) => item.content_type.startsWith(type))

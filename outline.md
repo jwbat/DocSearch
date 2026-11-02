@@ -46,7 +46,7 @@ Deferred items and small fixes from real use. Add new ones here.
 | 5 | Deploy target | `AWS_PROFILE=personal`, `us-west-2`. Pin `env=cdk.Environment(...)` in `app.py`. |
 | 6 | Frontend tooling | Vite + React + TypeScript, plain CSS, responsive and mobile-friendly. Markdown is rendered with `react-markdown` + `remark-gfm`, with syntax highlighting for fenced code blocks (`` ```python ``). Relative images in markdown load through `/file-url`. Relative links open the linked file in the viewer, and the browser Back button returns to the previous page. |
 | 7 | Search | Out of scope. Navigation is a drill-down disclosure tree only, with no search and no filename filter. |
-| 8 | File types | Markdown, PDF, images (PNG, JPG; GIF and WebP show inline too), plain text. No audio. Many hundreds of files eventually, so each file is fetched lazily when clicked. |
+| 8 | File types | Markdown, PDF, images (PNG, JPG; GIF, WebP, and SVG show inline too), plain text. No audio. Many hundreds of files eventually, so each file is fetched lazily when clicked. |
 | 9 | Stack layout | Lambda, API, and frontend hosting go in a new stack, `DocSearchWebStack`. The existing `DocSearchStack` stays the storage layer. |
 | 10 | PDF viewing | PDFs open in a new tab via the Open file button, so the browser's own viewer handles them. They are not rendered inline. iOS Safari's viewer (zoom, find, share, Save to Files) beats an `<iframe>`, which is unreliable on mobile, and pdf.js would be a heavy dependency for less. Cost: a new tab holds a presigned URL, so reloading it after the URL expires fails; tap Open file again. |
 
@@ -237,7 +237,7 @@ Done:
 - **Text cache** (`Viewer.tsx`): loaded markdown and plain text are kept in
   memory, keyed by manifest `sha256`, so revisiting is instant and never
   stale. It is memory-only, so a reload empties it.
-- **Inline images** (`Viewer.tsx`): PNG, JPG, GIF, and WebP show inline,
+- **Inline images** (`Viewer.tsx`): PNG, JPG, GIF, WebP, and SVG show inline,
   scaled down to the pane's width (never up); tall ones scroll. Each is
   fetched as a blob and kept as an object URL keyed by `sha256`, since a
   presigned URL expires and never hits the HTTP cache. The 20 most recent
