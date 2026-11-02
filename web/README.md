@@ -31,7 +31,7 @@ npm run lint    # oxlint
 - `src/App.tsx` — app shell: header, ← → visited-file arrows, URL-hash
   selection, one- or two-pane layout
 - `src/TreeView.tsx` — the disclosure-widget tree
-- `src/Viewer.tsx` — fetches the selected file; "Open file" for types
+- `src/Viewer.tsx` — fetches the selected file; plain text in a `<pre>`, "Open file" for types
   without a preview
 - `src/MarkdownView.tsx` — markdown rendering and syntax highlighting,
   loaded lazily as its own chunk

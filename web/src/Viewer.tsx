@@ -14,11 +14,20 @@ type State =
 // Text of every file loaded so far, keyed by its sha256 from the manifest.
 // Going back to a file is then instant, and never stale: an edit gives the
 // file a new hash, and a reload (which picks up edits) starts an empty cache.
-// Markdown is small, so nothing is ever evicted.
+// Text files are small, so nothing is ever evicted.
 const textCache = new Map<string, string>()
 
 function isMarkdown(item: ManifestItem): boolean {
   return item.content_type.startsWith('text/markdown')
+}
+
+function isPlainText(item: ManifestItem): boolean {
+  return item.content_type.startsWith('text/plain')
+}
+
+// isText reports whether the file is fetched and shown inline.
+function isText(item: ManifestItem): boolean {
+  return isMarkdown(item) || isPlainText(item)
 }
 
 // Viewer fetches and renders one file. Nothing is fetched until a file is
@@ -26,7 +35,8 @@ function isMarkdown(item: ManifestItem): boolean {
 // from S3. The parent keys this component by path, so selecting another
 // file starts over with fresh state. Files seen before come from textCache.
 //
-// Only markdown renders so far; other types get an "Open file" button.
+// Markdown and plain text render inline; other types get an "Open file"
+// button.
 export function Viewer({ item }: { item: ManifestItem }) {
   const [state, setState] = useState<State>(() => {
     const text = textCache.get(item.sha256)
@@ -34,7 +44,7 @@ export function Viewer({ item }: { item: ManifestItem }) {
   })
 
   useEffect(() => {
-    if (!isMarkdown(item) || textCache.has(item.sha256)) return
+    if (!isText(item) || textCache.has(item.sha256)) return
     const controller = new AbortController()
     const { signal } = controller
 
@@ -55,9 +65,12 @@ export function Viewer({ item }: { item: ManifestItem }) {
     return () => controller.abort()
   }, [item])
 
-  if (!isMarkdown(item)) return <OpenFile item={item} />
+  if (!isText(item)) return <OpenFile item={item} />
   if (state.status === 'loading') return <p className="placeholder">Loading…</p>
   if (state.status === 'error') return <p className="viewer-error">{state.message}</p>
+
+  // Plain text needs no renderer, so it skips the markdown chunk.
+  if (isPlainText(item)) return <pre className="plain-text">{state.text}</pre>
 
   return (
     <Suspense fallback={<p className="placeholder">Loading…</p>}>

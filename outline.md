@@ -24,7 +24,6 @@ Deferred items and small fixes from real use. Add new ones here.
 - **PDF and image viewing:** PNG/JPG and PDF open in a new tab via the
   Open file button for now; inline viewing is deferred. Mobile browsers
   handle inline PDFs inconsistently.
-- **Plain text:** fetch and show in a `<pre>`; currently gets Open file.
 - **Relative images and links in markdown** (no docs use them yet):
   images (`![](img/x.png)`) need the `/file-url` lookup; links between
   docs need hash routing to open in the viewer.
@@ -233,9 +232,12 @@ Done:
   to the end. The arrows only ever open files, never the tree. The list is
   kept in `sessionStorage`: a reload from a file view keeps it, and a reload
   from the tree view clears it.
-- **Text cache** (`Viewer.tsx`): loaded markdown is kept in memory, keyed by
-  manifest `sha256`, so revisiting is instant and never stale. It is
-  memory-only, so a reload empties it.
+- **Plain text** (`Viewer.tsx`, `Viewer.css`): `text/plain` files (`.txt`)
+  are fetched like markdown and shown in a `<pre>` — monospace, long lines
+  wrapped, ~80-column measure. No markdown chunk is loaded for them.
+- **Text cache** (`Viewer.tsx`): loaded markdown and plain text are kept in
+  memory, keyed by manifest `sha256`, so revisiting is instant and never
+  stale. It is memory-only, so a reload empties it.
 - **Open file button** (`Viewer.tsx`): types without a preview (PDF, PNG,
   …) show **Open file ↗**, which opens the file in a new tab. Each tap
   fetches a fresh presigned URL (they last 5 minutes); the tab opens before

@@ -124,6 +124,20 @@
   max-width: 100%;
 }
 
+/* Plain text files, shown as-is in monospace. Long lines wrap rather than
+   scroll: a .txt is prose more often than code, and sideways scrolling is
+   awkward on a phone. The measure is a little wider than markdown's to fit
+   the usual 80-column hard wrap. */
+.plain-text {
+  max-width: 82ch;
+  margin: 0 auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 /* "Open file" for types without a preview. Sized as a 44px tap target. */
 .open-file-button {
   min-height: 44px;
