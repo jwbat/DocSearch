@@ -25,9 +25,20 @@ function isPlainText(item: ManifestItem): boolean {
   return item.content_type.startsWith('text/plain')
 }
 
-// isText reports whether the file is fetched and shown inline.
+// isText reports whether the file is fetched and shown inline as text.
 function isText(item: ManifestItem): boolean {
   return isMarkdown(item) || isPlainText(item)
+}
+
+// Image types every browser can show. Others (HEIC, say) get "Open file".
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+
+function isImage(item: ManifestItem): boolean {
+  return IMAGE_TYPES.some((type) => item.content_type.startsWith(type))
+}
+
+function isPdf(item: ManifestItem): boolean {
+  return item.content_type.startsWith('application/pdf')
 }
 
 // Viewer fetches and renders one file. Nothing is fetched until a file is
@@ -35,8 +46,8 @@ function isText(item: ManifestItem): boolean {
 // from S3. The parent keys this component by path, so selecting another
 // file starts over with fresh state. Files seen before come from textCache.
 //
-// Markdown and plain text render inline; other types get an "Open file"
-// button.
+// Markdown, plain text, and images render inline; other types (PDF) get an
+// "Open file" button.
 export function Viewer({ item }: { item: ManifestItem }) {
   const [state, setState] = useState<State>(() => {
     const text = textCache.get(item.sha256)
@@ -65,6 +76,7 @@ export function Viewer({ item }: { item: ManifestItem }) {
     return () => controller.abort()
   }, [item])
 
+  if (isImage(item)) return <ImageView item={item} />
   if (!isText(item)) return <OpenFile item={item} />
   if (state.status === 'loading') return <p className="placeholder">Loading…</p>
   if (state.status === 'error') return <p className="viewer-error">{state.message}</p>
@@ -119,12 +131,107 @@ function PlainTextView({ text }: { text: string }) {
   )
 }
 
-// OpenFile stands in for a preview: the browser shows PDFs and images well
-// in a tab of its own. Presigned URLs only last a few minutes, so a fresh one
-// is fetched on each tap rather than when the file opens. The tab is opened
-// before the fetch, while still inside the tap, or Safari blocks it as a
-// popup; it is then pointed at the URL once that arrives.
+// Object URLs of images loaded so far, keyed by sha256 like textCache. A
+// presigned URL can't be cached (it expires, and its signature differs each
+// time, so the browser's HTTP cache never hits), so the image itself is kept
+// as a blob. Images can run to megabytes, so only the most recent few are
+// kept: Map order is insertion order, a hit moves the entry to the end, and
+// the oldest is revoked. Only the open file's image is on screen, and it is
+// always the newest entry, so eviction never pulls one out from under it.
+const IMAGE_CACHE_SIZE = 20
+const imageCache = new Map<string, string>()
+
+function cachedImage(sha256: string): string | undefined {
+  const url = imageCache.get(sha256)
+  if (url !== undefined) {
+    imageCache.delete(sha256)
+    imageCache.set(sha256, url)
+  }
+  return url
+}
+
+function cacheImage(sha256: string, url: string) {
+  imageCache.set(sha256, url)
+  while (imageCache.size > IMAGE_CACHE_SIZE) {
+    const [oldest, oldUrl] = imageCache.entries().next().value!
+    imageCache.delete(oldest)
+    URL.revokeObjectURL(oldUrl)
+  }
+}
+
+type ImageState =
+  | { status: 'loading' }
+  | { status: 'ready'; url: string }
+  | { status: 'error'; message: string }
+
+// ImageView shows an image scaled down to fit the pane's width; a tall one
+// scrolls. "Open full size" gives it a tab of its own, for zooming or saving.
+function ImageView({ item }: { item: ManifestItem }) {
+  const [state, setState] = useState<ImageState>(() => {
+    const url = cachedImage(item.sha256)
+    return url === undefined ? { status: 'loading' } : { status: 'ready', url }
+  })
+
+  useEffect(() => {
+    if (imageCache.has(item.sha256)) return
+    const controller = new AbortController()
+    const { signal } = controller
+
+    getFileUrl(item.path, signal)
+      .then(({ url }) => fetch(url, { signal }))
+      .then((res) => {
+        if (!res.ok) throw new Error(`Couldn't load the image (HTTP ${res.status})`)
+        return res.blob()
+      })
+      .then((blob) => {
+        const url = URL.createObjectURL(blob)
+        cacheImage(item.sha256, url)
+        setState({ status: 'ready', url })
+      })
+      .catch((err: unknown) => {
+        if (signal.aborted) return
+        setState({ status: 'error', message: err instanceof Error ? err.message : String(err) })
+      })
+    return () => controller.abort()
+  }, [item])
+
+  return (
+    <div className="image-view">
+      {state.status === 'loading' && <p className="placeholder">Loading…</p>}
+      {state.status === 'error' && <p className="viewer-error">{state.message}</p>}
+      {state.status === 'ready' && (
+        <img
+          src={state.url}
+          alt={item.path.split('/').pop()}
+          onError={() => setState({ status: 'error', message: "Couldn't show this image." })}
+        />
+      )}
+      <OpenFileButton item={item} label="Open full size ↗" />
+    </div>
+  )
+}
+
+// OpenFile stands in for a preview of types shown best by the browser in a
+// tab of its own: PDFs, in its PDF viewer (Decision 10 in outline.md).
 function OpenFile({ item }: { item: ManifestItem }) {
+  return (
+    <div className="open-file">
+      <p className="placeholder">
+        {isPdf(item)
+          ? "PDFs open in your browser's viewer."
+          : 'No preview for this file type.'}
+      </p>
+      <OpenFileButton item={item} label="Open file ↗" />
+    </div>
+  )
+}
+
+// OpenFileButton opens the file in a new tab. Presigned URLs only last a few
+// minutes, so a fresh one is fetched on each tap rather than when the file
+// opens. The tab is opened before the fetch, while still inside the tap, or
+// Safari blocks it as a popup; it is then pointed at the URL once that
+// arrives.
+function OpenFileButton({ item, label }: { item: ManifestItem; label: string }) {
   const [error, setError] = useState<string | null>(null)
 
   function open() {
@@ -142,12 +249,11 @@ function OpenFile({ item }: { item: ManifestItem }) {
   }
 
   return (
-    <div className="open-file">
-      <p className="placeholder">No preview for this file type yet.</p>
+    <>
       <button type="button" className="open-file-button" onClick={open}>
-        Open file ↗
+        {label}
       </button>
       {error && <p className="viewer-error">{error}</p>}
-    </div>
+    </>
   )
 }

@@ -21,9 +21,6 @@ there is a real, deployed API for it to call.
 
 Deferred items and small fixes from real use. Add new ones here.
 
-- **PDF and image viewing:** PNG/JPG and PDF open in a new tab via the
-  Open file button for now; inline viewing is deferred. Mobile browsers
-  handle inline PDFs inconsistently.
 - **Relative images and links in markdown** (no docs use them yet):
   images (`![](img/x.png)`) need the `/file-url` lookup; links between
   docs need hash routing to open in the viewer.
@@ -49,8 +46,9 @@ Deferred items and small fixes from real use. Add new ones here.
 | 5 | Deploy target | `AWS_PROFILE=personal`, `us-west-2`. Pin `env=cdk.Environment(...)` in `app.py`. |
 | 6 | Frontend tooling | Vite + React + TypeScript, plain CSS, responsive and mobile-friendly. Markdown is rendered with `react-markdown` + `remark-gfm`, with syntax highlighting for fenced code blocks (`` ```python ``). Relative images in markdown load through `/file-url`. Relative links open the linked file in the viewer, and the browser Back button returns to the previous page. |
 | 7 | Search | Out of scope. Navigation is a drill-down disclosure tree only, with no search and no filename filter. |
-| 8 | File types | Markdown, PDF, images (PNG, JPG), plain text. No audio. Many hundreds of files eventually, so each file is fetched lazily when clicked. |
+| 8 | File types | Markdown, PDF, images (PNG, JPG; GIF and WebP show inline too), plain text. No audio. Many hundreds of files eventually, so each file is fetched lazily when clicked. |
 | 9 | Stack layout | Lambda, API, and frontend hosting go in a new stack, `DocSearchWebStack`. The existing `DocSearchStack` stays the storage layer. |
+| 10 | PDF viewing | PDFs open in a new tab via the Open file button, so the browser's own viewer handles them. They are not rendered inline. iOS Safari's viewer (zoom, find, share, Save to Files) beats an `<iframe>`, which is unreliable on mobile, and pdf.js would be a heavy dependency for less. Cost: a new tab holds a presigned URL, so reloading it after the URL expires fails; tap Open file again. |
 
 ---
 
@@ -187,8 +185,7 @@ Deferred items and small fixes from real use. Add new ones here.
           returns to the containing page. External links open in a new tab.
       - Plain text: fetch the text and show it in a `<pre>`.
       - PNG/JPG: `<img src={url}>`.
-      - PDF: `<iframe>`/`<object>`, with an "open in new tab" link as the
-        fallback. Mobile browsers handle inline PDFs inconsistently.
+      - PDF: opens in a new tab instead (Decision 10).
     - **Hash routing:** the selected file lives in the URL, e.g.
       `#/recipes/lentil_soup.md`, so browser Back/Forward move between viewed
       files. Opening a file from the tree also expands the folders on its
@@ -240,7 +237,12 @@ Done:
 - **Text cache** (`Viewer.tsx`): loaded markdown and plain text are kept in
   memory, keyed by manifest `sha256`, so revisiting is instant and never
   stale. It is memory-only, so a reload empties it.
-- **Open file button** (`Viewer.tsx`): types without a preview (PDF, PNG,
+- **Inline images** (`Viewer.tsx`): PNG, JPG, GIF, and WebP show inline,
+  scaled down to the pane's width (never up); tall ones scroll. Each is
+  fetched as a blob and kept as an object URL keyed by `sha256`, since a
+  presigned URL expires and never hits the HTTP cache. The 20 most recent
+  are kept; older ones are revoked. **Open full size ↗** opens a new tab.
+- **Open file button** (`Viewer.tsx`): types without a preview (PDF, HEIC,
   …) show **Open file ↗**, which opens the file in a new tab. Each tap
   fetches a fresh presigned URL (they last 5 minutes); the tab opens before
   the fetch so Safari doesn't block it as a popup.

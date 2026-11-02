@@ -80,8 +80,10 @@ URL plus API Gateway throttling (20 requests/s, burst 50) is the guard.
 CloudFront doesn't cache the API routes.
 
 **Viewer:** markdown renders in-page (GitHub-flavored, with syntax-highlighted
-code blocks), and so does plain text (`.txt`, monospace). Other types (PDF,
-images) open in a new browser tab via an "Open file" button.
+code blocks), and so does plain text (`.txt`, monospace). Images (PNG, JPG,
+GIF, WebP) show inline, scaled to fit, with an "Open full size" button. PDFs
+open in a new browser tab via an "Open file" button, so the browser's own PDF
+viewer handles them.
 
 ---
 
@@ -206,6 +208,5 @@ contains it. See `web/README.md` for the other commands.
 ## Not Planned / Deferred
 
 - **Search** is not planned. Navigation is the drill-down tree only.
-- **Deferred viewer work:** inline PDF and image viewing (the "Open file"
-  button stands in) and relative images and links inside
-  markdown. See the Todo list at the top of `outline.md`.
+- **Inline PDFs** are not planned: they open in the browser's own viewer.
+- **Deferred viewer work:** relative images and links inside markdown. See the Todo list at the top of `outline.md`.
