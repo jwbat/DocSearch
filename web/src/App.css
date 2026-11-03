@@ -126,8 +126,13 @@
   .shell[data-selected='true'] .back {
     display: block;
   }
-  .shell[data-selected='true'] h1 {
+  .shell[data-selected='true'] h1,
+  .shell[data-selected='true'] .count {
     display: none;
+  }
+  /* With the count gone, the history buttons take over pushing right. */
+  .shell[data-selected='true'] .history {
+    margin-left: auto;
   }
 }
 
