@@ -130,6 +130,68 @@
   max-width: 100%;
 }
 
+/* Special tags a doc can use (<note>, <mark>, …), which MarkdownView.tsx
+   renders as divs and spans with these classes; see web/styles.md. Callouts
+   share blockquote's left rule, with a tinted background; their last child
+   drops its bottom margin so the padding stays even. */
+.markdown .note,
+.markdown .tip,
+.markdown .warn {
+  margin: 0 0 1em;
+  padding: 0.6em 1em;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 0.25rem 0.25rem 0;
+  background: var(--accent-soft);
+}
+
+.markdown .tip {
+  border-left-color: var(--tip);
+  background: var(--tip-soft);
+}
+
+.markdown .warn {
+  border-left-color: var(--warn);
+  background: var(--warn-soft);
+}
+
+.markdown .note > :last-child,
+.markdown .tip > :last-child,
+.markdown .warn > :last-child,
+.markdown .aside > :last-child,
+.markdown .indent > :last-child {
+  margin-bottom: 0;
+}
+
+/* A side remark: smaller, dimmer, indented. */
+.markdown .aside {
+  margin: 0 0 1em;
+  padding-left: 1em;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+
+/* Plain indent: every line, wrapped ones included, starts two character
+   widths in. Nested indents add up. */
+.markdown .indent {
+  margin: 0 0 1em;
+  padding-left: 2ch;
+}
+
+.markdown .mark {
+  padding: 0 0.2em;
+  border-radius: 0.2rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.markdown .muted {
+  color: var(--text-muted);
+}
+
+.markdown .bright {
+  color: #ddf093;
+}
+
 /* Plain text files, shown as-is in monospace. The measure is a little wider
    than markdown's to fit the usual 80-column hard wrap. */
 .plain-text {

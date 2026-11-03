@@ -1,3 +1,4 @@
+import type { Root, RootContent } from 'hast'
 import Markdown, { type Options } from 'react-markdown'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeRaw from 'rehype-raw'
@@ -15,13 +16,26 @@ import './highlight.css'
 // <span style="color: #ff1522">. CSS can't run script, and the docs are our
 // own. GitHub and other viewers drop the style and show the text plain.
 //
+// Also a few special tags, each a named style defined in Viewer.css:
+//   <note> <tip> <warn> <aside> <indent>   blocks, rendered as <div class="…">
+//   <mark> <muted>                         inline, rendered as <span class="…">
+// The sanitizer lets them through, then rehypeSpecialTags (after it) renames
+// them. Docs can't set class themselves, so they can't borrow the app's own
+// class names. Markdown inside a block tag is only parsed if a blank line
+// follows the tag. web/styles.md is the reference for these; keep it in step.
+//
 // Fenced code blocks with a language tag (```python, ```bash, ```go, …) are
 // then syntax-highlighted by rehype-highlight; untagged blocks stay plain.
 //
-// Order matters: sanitize runs after raw, and highlight runs last so the
-// sanitizer doesn't strip its class names.
+// Order matters: sanitize runs after raw; the special tags are renamed after
+// sanitizing, and highlight runs last, so the sanitizer doesn't strip the
+// class names either of them adds.
+const BLOCK_TAGS = ['note', 'tip', 'warn', 'aside', 'indent']
+const INLINE_TAGS = ['mark', 'muted', 'bright']
+
 const sanitizeSchema = {
   ...defaultSchema,
+  tagNames: [...(defaultSchema.tagNames ?? []), ...BLOCK_TAGS, ...INLINE_TAGS],
   attributes: {
     ...defaultSchema.attributes,
     span: [...(defaultSchema.attributes?.span ?? []), 'style'],
@@ -29,7 +43,29 @@ const sanitizeSchema = {
   },
 }
 
-const rehypePlugins: Options['rehypePlugins'] = [rehypeRaw, [rehypeSanitize, sanitizeSchema], rehypeHighlight]
+// rehypeSpecialTags turns <note>…</note> into <div class="note">…</div>, and
+// <mark>…</mark> into <span class="mark">…</span>, and so on.
+function rehypeSpecialTags() {
+  const rename = (node: Root | RootContent) => {
+    if (node.type === 'element') {
+      const name = node.tagName
+      const block = BLOCK_TAGS.includes(name)
+      if (block || INLINE_TAGS.includes(name)) {
+        node.tagName = block ? 'div' : 'span'
+        node.properties = { ...node.properties, className: [name] }
+      }
+    }
+    if ('children' in node) node.children.forEach(rename)
+  }
+  return rename
+}
+
+const rehypePlugins: Options['rehypePlugins'] = [
+  rehypeRaw,
+  [rehypeSanitize, sanitizeSchema],
+  rehypeSpecialTags,
+  rehypeHighlight,
+]
 
 // MarkdownView renders markdown text. It is most of the app's code by weight
 // (the parser, sanitizer, and highlight.js grammars), so Viewer loads it

@@ -9,6 +9,11 @@
   --text-muted: #a89c8f;
   --accent: #d9a05b;
   --accent-soft: rgb(217 160 91 / 0.15);
+  /* Callouts in markdown (div.tip, div.warn); div.note uses the accent. */
+  --tip: #8fb573;
+  --tip-soft: rgb(143 181 115 / 0.12);
+  --warn: #e8836b;
+  --warn-soft: rgb(232 131 107 / 0.12);
 
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;

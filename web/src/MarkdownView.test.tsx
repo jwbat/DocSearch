@@ -23,4 +23,21 @@ describe('MarkdownView sanitizing', () => {
   it('does not allow style on other elements', () => {
     expect(render('<p style="color: red">x</p>')).not.toContain('style=')
   })
+
+  it('renders block tags as divs and inline tags as spans, with markdown inside', () => {
+    const html = render('<warn>\n\n**Careful**\n\n</warn>\n\nA <mark>key</mark> and <muted>quiet</muted> word.')
+    expect(html).toMatch(/<div class="warn">\s*<p><strong>Careful<\/strong><\/p>\s*<\/div>/)
+    expect(html).toContain('<span class="mark">key</span>')
+    expect(html).toContain('<span class="muted">quiet</span>')
+  })
+
+  it('renders aside, a real HTML block tag, the same way', () => {
+    expect(render('<aside>\n\nside\n\n</aside>')).toMatch(/<div class="aside">\s*<p>side<\/p>\s*<\/div>/)
+  })
+
+  it('no longer accepts class names written in the doc', () => {
+    const html = render('<div class="warn">x</div>\n\n<span class="mark">y</span>')
+    expect(html).not.toContain('class="warn"')
+    expect(html).not.toContain('class="mark"')
+  })
 })
