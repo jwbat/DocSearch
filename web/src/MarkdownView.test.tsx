@@ -35,6 +35,36 @@ describe('MarkdownView sanitizing', () => {
     expect(render('<aside>\n\nside\n\n</aside>')).toMatch(/<div class="aside">\s*<p>side<\/p>\s*<\/div>/)
   })
 
+  describe('<nowrap>', () => {
+    // white-space: pre shows every newline left in the block, so each source
+    // line must come out as exactly one newline, and nothing extra.
+    const lines = "Born: c. 1450\nDied: 27th August 1521, Condé-sur-l&#x27;Escaut, France"
+
+    it('keeps source line breaks and spaces, with blank lines around and inside', () => {
+      const html = render('<nowrap>\n\nline one  **bold**\nline two\n\n</nowrap>')
+      expect(html).toContain('<div class="nowrap"><p>line one  <strong>bold</strong>\nline two</p></div>')
+    })
+
+    it('works written compactly, with no blank lines', () => {
+      const html = render("<indent>\n<nowrap>\nBorn: c. 1450\nDied: 27th August 1521, Condé-sur-l'Escaut, France\n</nowrap>\n</indent>")
+      expect(html).toContain(`<div class="nowrap">${lines}</div>`)
+    })
+
+    it('drops trailing spaces, which markdown leaves as-is in a compact block', () => {
+      const html = render("<nowrap>\nBorn: c. 1450    \nDied: 27th August 1521, Condé-sur-l'Escaut, France    \n</nowrap>")
+      expect(html).toContain(`<div class="nowrap">${lines}</div>`)
+    })
+
+    it('works right after a line of text, as in a list of entries', () => {
+      const html = render("<bright>des Prez, Josquin</bright>    \n<indent>\n<nowrap>\nBorn: c. 1450    \nDied: 27th August 1521, Condé-sur-l'Escaut, France    \n</nowrap>\n</indent>")
+      expect(html).toContain(`<div class="nowrap">${lines.replace('\n', '<br/>')}<br/></div>`)
+    })
+
+    it('leaves code blocks inside it alone', () => {
+      expect(render('<nowrap>\n\n```\na\n\nb\n```\n\n</nowrap>')).toContain('<pre><code>a\n\nb\n</code></pre>')
+    })
+  })
+
   it('no longer accepts class names written in the doc', () => {
     const html = render('<div class="warn">x</div>\n\n<span class="mark">y</span>')
     expect(html).not.toContain('class="warn"')

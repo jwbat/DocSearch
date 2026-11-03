@@ -158,7 +158,8 @@
 .markdown .tip > :last-child,
 .markdown .warn > :last-child,
 .markdown .aside > :last-child,
-.markdown .indent > :last-child {
+.markdown .indent > :last-child,
+.markdown .nowrap > :last-child {
   margin-bottom: 0;
 }
 
@@ -177,6 +178,17 @@
   padding-left: 2ch;
 }
 
+/* Each source line stays one line: markdown keeps a paragraph's line breaks
+   in the text, and white-space: pre shows them (and runs of spaces) instead
+   of reflowing. Long lines scroll sideways inside the block, not the page.
+   The newlines the renderer adds between elements would show too, as blank
+   lines; MarkdownView.tsx (tidyNowrap) removes those. */
+.markdown .nowrap {
+  margin: 0 0 1em;
+  overflow-x: auto;
+  white-space: pre;
+}
+
 .markdown .mark {
   padding: 0 0.2em;
   border-radius: 0.2rem;
@@ -190,6 +202,16 @@
 
 .markdown .bright {
   color: #ddf093;
+}
+
+/* Weights. <bold> matches markdown's **bold**; <semibold> is the headings'
+   weight, a step lighter. The system font has both. */
+.markdown .bold {
+  font-weight: 700;
+}
+
+.markdown .semibold {
+  font-weight: 600;
 }
 
 /* Plain text files, shown as-is in monospace. The measure is a little wider
