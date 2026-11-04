@@ -13,8 +13,8 @@ type State =
 
 // Text of every file loaded so far, keyed by its sha256 from the manifest.
 // Going back to a file is then instant, and never stale: an edit gives the
-// file a new hash, and a reload (which picks up edits) starts an empty cache.
-// Text files are small, so nothing is ever evicted.
+// file a new hash, so a refreshed manifest misses here and fetches it. Text
+// files are small, so nothing is ever evicted.
 const textCache = new Map<string, string>()
 
 function isMarkdown(item: ManifestItem): boolean {
@@ -76,17 +76,23 @@ export function Viewer({ item }: { item: ManifestItem }) {
     return () => controller.abort()
   }, [item])
 
+  // A refreshed manifest can change the hash of the open file. The cache wins
+  // over state, which still holds the old text; on a miss that text stays up
+  // until the new text arrives.
+  const cached = textCache.get(item.sha256)
+  const shown: State = cached === undefined ? state : { status: 'ready', text: cached }
+
   if (isImage(item)) return <ImageView item={item} />
   if (!isText(item)) return <OpenFile item={item} />
-  if (state.status === 'loading') return <p className="placeholder">Loading…</p>
-  if (state.status === 'error') return <p className="viewer-error">{state.message}</p>
+  if (shown.status === 'loading') return <p className="placeholder">Loading…</p>
+  if (shown.status === 'error') return <p className="viewer-error">{shown.message}</p>
 
   // Plain text needs no renderer, so it skips the markdown chunk.
-  if (isPlainText(item)) return <PlainTextView text={state.text} />
+  if (isPlainText(item)) return <PlainTextView text={shown.text} />
 
   return (
     <Suspense fallback={<p className="placeholder">Loading…</p>}>
-      <MarkdownView text={state.text} />
+      <MarkdownView text={shown.text} />
     </Suspense>
   )
 }
@@ -173,7 +179,7 @@ function ImageView({ item }: { item: ManifestItem }) {
   })
 
   useEffect(() => {
-    if (imageCache.has(item.sha256)) return
+    if (cachedImage(item.sha256) !== undefined) return
     const controller = new AbortController()
     const { signal } = controller
 
@@ -195,13 +201,19 @@ function ImageView({ item }: { item: ManifestItem }) {
     return () => controller.abort()
   }, [item])
 
+  // As in Viewer: the cache wins when a refresh changes the hash, except over
+  // an error, which may be this very image failing to display.
+  const cached = imageCache.get(item.sha256)
+  const shown: ImageState =
+    cached === undefined || state.status === 'error' ? state : { status: 'ready', url: cached }
+
   return (
     <div className="image-view">
-      {state.status === 'loading' && <p className="placeholder">Loading…</p>}
-      {state.status === 'error' && <p className="viewer-error">{state.message}</p>}
-      {state.status === 'ready' && (
+      {shown.status === 'loading' && <p className="placeholder">Loading…</p>}
+      {shown.status === 'error' && <p className="viewer-error">{shown.message}</p>}
+      {shown.status === 'ready' && (
         <img
-          src={state.url}
+          src={shown.url}
           alt={item.path.split('/').pop()}
           onError={() => setState({ status: 'error', message: "Couldn't show this image." })}
         />

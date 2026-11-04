@@ -153,6 +153,37 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
+  // A phone keeps the app suspended in the background, often for days, so
+  // fetch the manifest again each time it comes back to the foreground. If
+  // the open file has gone, return to the tree. A failed fetch (offline,
+  // say) leaves the current list up rather than replacing it with an error.
+  useEffect(() => {
+    let controller: AbortController | undefined
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return
+      controller?.abort()
+      const { signal } = (controller = new AbortController())
+      getManifest(signal)
+        .then((manifest) => {
+          const live = new Set(manifest.map((item) => item.path))
+          setItems(manifest)
+          setError(null)
+          setSelected((path) => (path !== null && live.has(path) ? path : null))
+          setVisited(({ paths, index }) => {
+            const kept = paths.filter((p) => live.has(p))
+            const at = kept.indexOf(paths[index])
+            return { paths: kept, index: at >= 0 ? at : kept.length - 1 }
+          })
+        })
+        .catch(() => {})
+    }
+    document.addEventListener('visibilitychange', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      controller?.abort()
+    }
+  }, [])
+
   return (
     <div className="shell" data-selected={selected !== null}>
       <header className="header">

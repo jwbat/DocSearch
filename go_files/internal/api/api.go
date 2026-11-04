@@ -167,6 +167,16 @@ func validatePath(path string) string {
 	return ""
 }
 
+// jsonHeaders marks every response uncacheable: the manifest changes on each
+// sync and presigned URLs expire, and without this a phone's browser can keep
+// serving an old answer.
+func jsonHeaders() map[string]string {
+	return map[string]string{
+		"Content-Type":  "application/json",
+		"Cache-Control": "no-store",
+	}
+}
+
 func jsonResponse(status int, body any) events.APIGatewayV2HTTPResponse {
 	b, err := json.Marshal(body)
 	if err != nil {
@@ -174,7 +184,7 @@ func jsonResponse(status int, body any) events.APIGatewayV2HTTPResponse {
 	}
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: status,
-		Headers:    map[string]string{"Content-Type": "application/json"},
+		Headers:    jsonHeaders(),
 		Body:       string(b),
 	}
 }
@@ -183,7 +193,7 @@ func errorResponse(status int, msg string) events.APIGatewayV2HTTPResponse {
 	b, _ := json.Marshal(errorBody{Error: msg})
 	return events.APIGatewayV2HTTPResponse{
 		StatusCode: status,
-		Headers:    map[string]string{"Content-Type": "application/json"},
+		Headers:    jsonHeaders(),
 		Body:       string(b),
 	}
 }

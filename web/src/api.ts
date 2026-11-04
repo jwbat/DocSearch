@@ -36,7 +36,9 @@ function apiBase(): URL {
 }
 
 async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(new URL(path, apiBase()), { signal })
+  // no-store: answers change with every sync, and a home-screen app on iOS
+  // otherwise can get an old one back from its own cache.
+  const res = await fetch(new URL(path, apiBase()), { signal, cache: 'no-store' })
   if (!res.ok) {
     // Every API error has the shape {"error": "..."}; fall back to the
     // status text if something upstream (e.g. API Gateway) answered instead.

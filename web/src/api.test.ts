@@ -34,6 +34,12 @@ describe('api client', () => {
     expect(items).toEqual([{ path: 'a.md' }])
   })
 
+  it('never answers from the browser cache', async () => {
+    fetchMock.mockResolvedValue(jsonResponse(200, []))
+    await getManifest()
+    expect(fetchMock.mock.calls[0][1]?.cache).toBe('no-store')
+  })
+
   it('keeps a base path when the base URL has one', async () => {
     vi.stubEnv('VITE_API_URL', 'https://api.example.test/prod')
     fetchMock.mockResolvedValue(jsonResponse(200, []))

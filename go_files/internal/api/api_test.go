@@ -163,6 +163,17 @@ func TestManifestEmptyIsArray(t *testing.T) {
 	}
 }
 
+func TestResponsesAreUncacheable(t *testing.T) {
+	db := &fakeDB{entries: sampleEntries(), pageSize: 10}
+	srv := newServer(db)
+	for _, path := range []string{"/manifest", "/nope"} {
+		resp, _ := srv.Handle(context.Background(), get(path, ""))
+		if got := resp.Headers["Cache-Control"]; got != "no-store" {
+			t.Errorf("%s: Cache-Control = %q, want no-store", path, got)
+		}
+	}
+}
+
 func TestFileURLPresigns(t *testing.T) {
 	db := &fakeDB{entries: sampleEntries()}
 	resp, err := newServer(db).Handle(context.Background(), get("/file-url", "path=b%2Freport.pdf"))
