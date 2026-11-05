@@ -247,6 +247,10 @@ class DocSearchWebStack(Stack):
             # unchanged), so a phone never keeps an old index.html after a
             # deploy. The hashed JS and CSS names already change per build.
             cache_control=[s3deploy.CacheControl.no_cache()],
+            # The handler shells out to the AWS CLI, which used all of the
+            # 128 MB default and took about 75 s per deploy. Lambda CPU
+            # scales with memory, so this adds headroom and speed.
+            memory_limit=512,
         )
 
         # The dev server's VITE_API_URL; the hosted app doesn't use it.

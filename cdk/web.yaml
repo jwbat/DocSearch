@@ -66,7 +66,7 @@ Resources:
         - arm64
       Code:
         S3Bucket: cdk-hnb659fds-assets-559612528400-us-west-2
-        S3Key: 33b7d3b0f305e575e3e9549be5bceb1794311eefd91277600970f617fbdbb5f6.zip
+        S3Key: d869271e4154e76af85b2073ed6a2b5f416fcb70a85f36d685e6595177a83c55.zip
       Environment:
         Variables:
           DOCSEARCH_TABLE:
@@ -89,7 +89,7 @@ Resources:
       - ApiFunctionServiceRole52B9747B
     Metadata:
       aws:cdk:path: DocSearchWebStack/ApiFunction/Resource
-      aws:asset:path: asset.33b7d3b0f305e575e3e9549be5bceb1794311eefd91277600970f617fbdbb5f6
+      aws:asset:path: asset.d869271e4154e76af85b2073ed6a2b5f416fcb70a85f36d685e6595177a83c55
       aws:asset:is-bundled: true
       aws:asset:property: Code
   HttpApiF5A9A8A7:
@@ -207,7 +207,7 @@ Resources:
       Tags:
         - Key: aws-cdk:auto-delete-objects
           Value: "true"
-        - Key: aws-cdk:cr-owned:97e3bf85
+        - Key: aws-cdk:cr-owned:3011e710
           Value: "true"
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
@@ -417,17 +417,17 @@ Resources:
       aws:asset:path: asset.a72522445441e9b66c2f16956c54d4786af8c61c156b80c48a6e7c32fcc49023.zip
       aws:asset:is-bundled: false
       aws:asset:property: Content
-  SiteDeploymentCustomResource42D55606:
+  SiteDeploymentCustomResource512MiB487ECB12:
     Type: Custom::CDKBucketDeployment
     Properties:
       ServiceToken:
         Fn::GetAtt:
-          - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536
+          - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB6723FB92
           - Arn
       SourceBucketNames:
         - cdk-hnb659fds-assets-559612528400-us-west-2
       SourceObjectKeys:
-        - 3886081281649fe7cb625f453af21f772fbd9c733ba8ba74ef71f88dde1ba4cf.zip
+        - bdc1b5faecb0dc295f40dba457e2015cb843a870855a5ab817bb3a3063b2b04d.zip
       DestinationBucketName:
         Ref: SiteBucket397A1860
       WaitForDistributionInvalidation: true
@@ -442,8 +442,8 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: DocSearchWebStack/SiteDeployment/CustomResource/Default
-  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265:
+      aws:cdk:path: DocSearchWebStack/SiteDeployment/CustomResource-512MiB/Default
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -460,8 +460,8 @@ Resources:
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
     Metadata:
-      aws:cdk:path: DocSearchWebStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource
-  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF:
+      aws:cdk:path: DocSearchWebStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB/ServiceRole/Resource
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726:
     Type: AWS::IAM::Policy
     Properties:
       PolicyDocument:
@@ -502,12 +502,12 @@ Resources:
             Effect: Allow
             Resource: "*"
         Version: "2012-10-17"
-      PolicyName: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF
+      PolicyName: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726
       Roles:
-        - Ref: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265
+        - Ref: CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1
     Metadata:
-      aws:cdk:path: DocSearchWebStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource
-  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536:
+      aws:cdk:path: DocSearchWebStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB/ServiceRole/DefaultPolicy/Resource
+  CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB6723FB92:
     Type: AWS::Lambda::Function
     Properties:
       Code:
@@ -519,17 +519,18 @@ Resources:
       Handler: index.handler
       Layers:
         - Ref: SiteDeploymentAwsCliLayerADBDEF4E
+      MemorySize: 512
       Role:
         Fn::GetAtt:
-          - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265
+          - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1
           - Arn
       Runtime: python3.13
       Timeout: 900
     DependsOn:
-      - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF
-      - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265
+      - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleDefaultPolicy96C3E726
+      - CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiBServiceRoleBA21DBC1
     Metadata:
-      aws:cdk:path: DocSearchWebStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource
+      aws:cdk:path: DocSearchWebStack/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C512MiB/Resource
       aws:asset:path: asset.97e9ebf0b174a5c8f7faa505739022b7f509edddffcab9211dcd08b759944c4f
       aws:asset:is-bundled: false
       aws:asset:property: Code

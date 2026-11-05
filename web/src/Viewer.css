@@ -200,8 +200,16 @@
   color: var(--text-muted);
 }
 
-.markdown .bright {
+.markdown .lime {
   color: #ddf093;
+}
+
+.markdown .magenta {
+  color: #ce4760;
+}
+
+.markdown .cream {
+  color: #f5fdc6;
 }
 
 /* Weights. <bold> matches markdown's **bold**; <semibold> is the headings'
@@ -269,7 +277,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
 }
 
 .image-view img {
@@ -292,4 +299,20 @@
 
 .open-file-button:hover {
   border-color: var(--accent);
+}
+
+/* The header's ↗ button has no room for a message beside it, so a failure
+   hangs just below the header, over the image. */
+.open-full-size-error {
+  position: absolute;
+  top: 100%;
+  right: 1rem;
+  max-width: calc(100% - 2rem);
+  box-sizing: border-box;
+  margin: 0.25rem 0 0;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--surface);
+  font-size: 0.875rem;
 }

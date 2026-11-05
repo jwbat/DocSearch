@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getManifest, type ManifestItem } from './api'
 import { TreeView } from './TreeView'
 import { buildTree } from './tree'
-import { Viewer } from './Viewer'
+import { OpenFullSize, Viewer } from './Viewer'
 import './App.css'
 
 // The open file's path lives in the URL hash so a reload reopens it.
@@ -193,6 +193,7 @@ export default function App() {
         <h1>Docs</h1>
         {items && <span className="count">{items.length} files</span>}
         <div className="history">
+          {selectedItem && <OpenFullSize key={selectedItem.path} item={selectedItem} />}
           <button aria-label="Previous file" disabled={!items || visited.index <= 0} onClick={() => step(-1)}>
             ←
           </button>

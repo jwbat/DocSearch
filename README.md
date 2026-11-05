@@ -82,7 +82,7 @@ CloudFront doesn't cache the API routes.
 **Viewer:** markdown renders in-page (GitHub-flavored, with syntax-highlighted
 code blocks; `<span>`/`<div>` may carry a `style`, e.g.
 `<span style="color: #ff1522">`), and so does plain text (`.txt`, monospace). Images (PNG, JPG,
-GIF, WebP, SVG) show inline, scaled to fit, with an "Open full size" button. PDFs
+GIF, WebP, SVG) show inline, scaled to fit, with a ↗ button in the header to open them full size. PDFs
 open in a new browser tab via an "Open file" button, so the browser's own PDF
 viewer handles them.
 

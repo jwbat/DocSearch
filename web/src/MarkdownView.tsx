@@ -18,7 +18,7 @@ import './highlight.css'
 //
 // Also a few special tags, each a named style defined in Viewer.css:
 //   <note> <tip> <warn> <aside> <indent> <nowrap>   blocks, rendered as <div class="…">
-//   <mark> <muted> <bright> <bold> <semibold>       inline, rendered as <span class="…">
+//   <mark> <muted> <lime> <bold> <semibold>       inline, rendered as <span class="…">
 // The sanitizer lets them through, then rehypeSpecialTags (after it) renames
 // them. Docs can't set class themselves, so they can't borrow the app's own
 // class names. Markdown inside a block tag is only parsed if a blank line
@@ -31,7 +31,7 @@ import './highlight.css'
 // sanitizing, and highlight runs last, so the sanitizer doesn't strip the
 // class names either of them adds.
 const BLOCK_TAGS = ['note', 'tip', 'warn', 'aside', 'indent', 'nowrap']
-const INLINE_TAGS = ['mark', 'muted', 'bright', 'bold', 'semibold']
+const INLINE_TAGS = ['mark', 'muted', 'bold', 'semibold', 'lime', 'magenta', 'cream']
 
 const sanitizeSchema = {
   ...defaultSchema,

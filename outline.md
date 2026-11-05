@@ -245,7 +245,8 @@ Done:
   scaled down to the pane's width (never up); tall ones scroll. Each is
   fetched as a blob and kept as an object URL keyed by `sha256`, since a
   presigned URL expires and never hits the HTTP cache. The 20 most recent
-  are kept; older ones are revoked. **Open full size ↗** opens a new tab.
+  are kept; older ones are revoked. A **↗** button in the header, left of
+  the ← → buttons, opens the image full size in a new tab.
 - **Open file button** (`Viewer.tsx`): types without a preview (PDF, HEIC,
   …) show **Open file ↗**, which opens the file in a new tab. Each tap
   fetches a fresh presigned URL (they last 5 minutes); the tab opens before

@@ -56,7 +56,7 @@ describe('MarkdownView sanitizing', () => {
     })
 
     it('works right after a line of text, as in a list of entries', () => {
-      const html = render("<bright>des Prez, Josquin</bright>    \n<indent>\n<nowrap>\nBorn: c. 1450    \nDied: 27th August 1521, Condé-sur-l'Escaut, France    \n</nowrap>\n</indent>")
+      const html = render("<lime>des Prez, Josquin</lime>    \n<indent>\n<nowrap>\nBorn: c. 1450    \nDied: 27th August 1521, Condé-sur-l'Escaut, France    \n</nowrap>\n</indent>")
       expect(html).toContain(`<div class="nowrap">${lines.replace('\n', '<br/>')}<br/></div>`)
     })
 

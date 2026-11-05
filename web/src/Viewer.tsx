@@ -171,7 +171,8 @@ type ImageState =
   | { status: 'error'; message: string }
 
 // ImageView shows an image scaled down to fit the pane's width; a tall one
-// scrolls. "Open full size" gives it a tab of its own, for zooming or saving.
+// scrolls. OpenFullSize, up in the header, gives it a tab of its own, for
+// zooming or saving.
 function ImageView({ item }: { item: ManifestItem }) {
   const [state, setState] = useState<ImageState>(() => {
     const url = cachedImage(item.sha256)
@@ -218,7 +219,6 @@ function ImageView({ item }: { item: ManifestItem }) {
           onError={() => setState({ status: 'error', message: "Couldn't show this image." })}
         />
       )}
-      <OpenFileButton item={item} label="Open full size ↗" />
     </div>
   )
 }
@@ -238,12 +238,12 @@ function OpenFile({ item }: { item: ManifestItem }) {
   )
 }
 
-// OpenFileButton opens the file in a new tab. Presigned URLs only last a few
+// useOpenInTab opens the file in a new tab. Presigned URLs only last a few
 // minutes, so a fresh one is fetched on each tap rather than when the file
 // opens. The tab is opened before the fetch, while still inside the tap, or
 // Safari blocks it as a popup; it is then pointed at the URL once that
 // arrives.
-function OpenFileButton({ item, label }: { item: ManifestItem; label: string }) {
+function useOpenInTab(item: ManifestItem) {
   const [error, setError] = useState<string | null>(null)
 
   function open() {
@@ -260,12 +260,36 @@ function OpenFileButton({ item, label }: { item: ManifestItem; label: string }) 
       })
   }
 
+  return { open, error }
+}
+
+function OpenFileButton({ item, label }: { item: ManifestItem; label: string }) {
+  const { open, error } = useOpenInTab(item)
+
   return (
     <>
       <button type="button" className="open-file-button" onClick={open}>
         {label}
       </button>
       {error && <p className="viewer-error">{error}</p>}
+    </>
+  )
+}
+
+// OpenFullSize is the header's ↗ button, shown only for an image, so the
+// button takes no room from the image itself. The parent keys it by path, so
+// an error doesn't outlive its file.
+export function OpenFullSize({ item }: { item: ManifestItem }) {
+  const { open, error } = useOpenInTab(item)
+
+  if (!isImage(item)) return null
+
+  return (
+    <>
+      <button type="button" aria-label="Open full size" title="Open full size" onClick={open}>
+        ↗
+      </button>
+      {error && <p className="viewer-error open-full-size-error">{error}</p>}
     </>
   )
 }
