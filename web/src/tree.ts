@@ -61,3 +61,20 @@ export function buildTree(items: ManifestItem[]): FolderNode {
   }
   return root
 }
+
+// Names as the UI shows them. Display only: paths, links and sort order all
+// keep the real names.
+export function displayName(name: string): string {
+  return name.replaceAll('_', ' ')
+}
+
+// displayFileName splits a file name for display: Washington_State.md is
+// "Washington State" and "md". Only the last dot counts. A leading dot
+// (.gitignore) or a trailing one isn't an extension, so ext is ''.
+export function displayFileName(fileName: string): { stem: string; ext: string } {
+  const dot = fileName.lastIndexOf('.')
+  if (dot <= 0 || dot === fileName.length - 1) {
+    return { stem: displayName(fileName), ext: '' }
+  }
+  return { stem: displayName(fileName.slice(0, dot)), ext: fileName.slice(dot + 1) }
+}

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 
+import { displayFileName, displayName } from './tree'
 import type { FolderNode, TreeNode } from './tree'
 import './TreeView.css'
 
@@ -43,7 +44,9 @@ function TreeItem({ node, depth, ...props }: TreeProps & { node: TreeNode; depth
           onClick={() => props.onToggle(node.path)}
         >
           <span className="chevron" aria-hidden="true">▸</span>
-          <span className="name">{node.name}</span>
+          <span className="name">
+            <span className="folder-label">{displayName(node.name)}</span>
+          </span>
         </button>
         {open && (
           <ul>
@@ -57,6 +60,7 @@ function TreeItem({ node, depth, ...props }: TreeProps & { node: TreeNode; depth
   }
 
   const selected = props.selected === node.path
+  const { stem, ext } = displayFileName(node.name)
   return (
     <li>
       <button
@@ -66,7 +70,10 @@ function TreeItem({ node, depth, ...props }: TreeProps & { node: TreeNode; depth
         onClick={() => props.onSelect(node.path)}
       >
         <span className="chevron" aria-hidden="true" />
-        <span className="name">{node.name}</span>
+        <span className="name file-name">
+          <span className="stem">{stem}</span>
+          {ext && <span className="ext">{ext}</span>}
+        </span>
       </button>
     </li>
   )

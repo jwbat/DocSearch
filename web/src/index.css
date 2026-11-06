@@ -9,6 +9,13 @@
   --text-muted: #a89c8f;
   --accent: #d9a05b;
   --accent-soft: rgb(217 160 91 / 0.15);
+  /* Folder names in the tree. */
+  --folder: #ffb020;
+  /* The triangles beside them. */
+  --chevron: #c9304f;
+  --chevron-open: #2fa8ff;
+  /* Header text, the ← → buttons and file names in the tree. */
+  --cream: #f7e7c6;
   /* Callouts in markdown (div.tip, div.warn); div.note uses the accent. */
   --tip: #8fb573;
   --tip-soft: rgb(143 181 115 / 0.12);

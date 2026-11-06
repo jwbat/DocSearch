@@ -15,12 +15,17 @@
   border: 0;
   border-radius: 0.375rem;
   background: none;
-  color: var(--text);
+  color: var(--cream);
   font: inherit;
-  font-size: 0.9375rem;
+  font-size: 1rem;
   text-align: left;
   cursor: pointer;
   box-sizing: border-box;
+}
+
+.tree-row.folder {
+  color: var(--folder);
+  font-weight: 600;
 }
 
 /* Touch screens: rows at least 44px tall, Apple's minimum comfortable tap
@@ -29,11 +34,11 @@
   .tree-row {
     min-height: 2.75rem;
     align-items: center;
-    font-size: 1rem;
+    font-size: 1.0625rem;
   }
   .tree-row.folder {
-    /* 17px, iOS's standard body size: one step above the files. */
-    font-size: 1.0625rem;
+    /* 18px: one step above the files. */
+    font-size: 1.125rem;
   }
 }
 
@@ -60,20 +65,38 @@
 .chevron {
   flex: 0 0 1.25rem;
   text-align: center;
-  font-size: 1.25em;
-  /* 1.25em × 1.2 = 1.5em of the row: the same height as one line of the
-     name, so the larger triangle stays level with the first line. */
-  line-height: 1.2;
-  color: var(--text-muted);
-  transition: transform 0.15s ease;
+  font-size: 1.5em;
+  /* 1.5em × 1 = 1.5em of the row: the same height as one line of the name,
+     so the larger triangle stays level with the first line. */
+  line-height: 1;
+  color: var(--chevron);
+  transition: transform 0.15s ease, color 0.15s ease;
 }
 
 .tree-row[aria-expanded='true'] .chevron {
+  color: var(--chevron-open);
   transform: rotate(90deg);
 }
 
+/* The open folder's underline, drawn left to right. A background rather than
+   text-decoration because it can animate; on an inline element it runs along
+   each wrapped line in turn. .name is a flex item, so always a block: the
+   underline needs this inline span to follow the text, not the row. */
+.folder-label {
+  background: linear-gradient(var(--chevron-open), var(--chevron-open)) 0 100% / 0 2px no-repeat;
+  /* Closing wipes it away quickly; the slow draw is on the rule below. */
+  transition: background-size 0.15s ease;
+}
+
+.tree-row[aria-expanded='true'] .folder-label {
+  background-size: 100% 2px;
+  transition: background-size 0.8s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .chevron {
+  .chevron,
+  .folder-label,
+  .tree-row[aria-expanded='true'] .folder-label {
     transition: none;
   }
 }
@@ -84,4 +107,29 @@
   /* Long names wrap; "anywhere" also breaks long unbroken names like
      some_very_long_file_name.md that have no spaces to wrap at. */
   overflow-wrap: anywhere;
+}
+
+/* Stem on the left, file type right-aligned. Baseline keeps the smaller type
+   level with the first line of a wrapped name. */
+.file-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.stem {
+  flex: 1;
+  min-width: 0;
+}
+
+.ext {
+  flex: none;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+@media (pointer: coarse) {
+  .ext {
+    font-size: 1rem;
+  }
 }

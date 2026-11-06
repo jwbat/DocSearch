@@ -31,7 +31,7 @@ import './highlight.css'
 // sanitizing, and highlight runs last, so the sanitizer doesn't strip the
 // class names either of them adds.
 const BLOCK_TAGS = ['note', 'tip', 'warn', 'aside', 'indent', 'nowrap']
-const INLINE_TAGS = ['mark', 'muted', 'bold', 'semibold', 'lime', 'magenta', 'cream']
+const INLINE_TAGS = ['mark', 'muted', 'bold', 'semibold', 'lime', 'magenta', 'cream', 'gold']
 
 const sanitizeSchema = {
   ...defaultSchema,

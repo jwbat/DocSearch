@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 
 import { getFileUrl, type ManifestItem } from './api'
+import { displayFileName } from './tree'
 import './Viewer.css'
 
 // The markdown renderer is a separate chunk, fetched on first use.
@@ -215,7 +216,7 @@ function ImageView({ item }: { item: ManifestItem }) {
       {shown.status === 'ready' && (
         <img
           src={shown.url}
-          alt={item.path.split('/').pop()}
+          alt={displayFileName(item.path.split('/').pop()!).stem}
           onError={() => setState({ status: 'error', message: "Couldn't show this image." })}
         />
       )}

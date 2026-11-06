@@ -36,13 +36,14 @@
 
 .header h1 {
   margin: 0;
+  color: var(--cream);
   font-size: 1.125rem;
   font-weight: 600;
 }
 
 .header .count {
   margin-left: auto;
-  color: var(--text-muted);
+  color: var(--cream);
   font-size: 0.875rem;
 }
 
@@ -59,7 +60,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent);
+  color: var(--cream);
   font: inherit;
   font-size: 1.25rem;
   cursor: pointer;

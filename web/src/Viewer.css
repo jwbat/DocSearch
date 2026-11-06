@@ -212,6 +212,10 @@
   color: #f5fdc6;
 }
 
+.markdown .gold {
+  color: #f5bb00;
+}
+
 /* Weights. <bold> matches markdown's **bold**; <semibold> is the headings'
    weight, a step lighter. The system font has both. */
 .markdown .bold {

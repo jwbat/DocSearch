@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { ManifestItem } from './api'
-import { buildTree, type FolderNode, type TreeNode } from './tree'
+import { buildTree, displayFileName, displayName, type FolderNode, type TreeNode } from './tree'
 
 function item(path: string): ManifestItem {
   return { path, sha256: `hash-${path}`, size_bytes: 1, content_type: 'text/plain', modified_time: '' }
@@ -89,5 +89,37 @@ describe('buildTree', () => {
     const a = buildTree([item('readme.md'), item('README.md')])
     const b = buildTree([item('README.md'), item('readme.md')])
     expect(names(a)).toEqual(names(b))
+  })
+})
+
+describe('displayName', () => {
+  it('turns every underscore into a space', () => {
+    expect(displayName('Pacific_North_West')).toBe('Pacific North West')
+  })
+
+  it('leaves hyphens alone', () => {
+    expect(displayName('well-known')).toBe('well-known')
+  })
+})
+
+describe('displayFileName', () => {
+  it('splits the stem from the extension', () => {
+    expect(displayFileName('Washington_State.md')).toEqual({ stem: 'Washington State', ext: 'md' })
+    expect(displayFileName('autumn_shapes.svg')).toEqual({ stem: 'autumn shapes', ext: 'svg' })
+  })
+
+  it('only counts the last dot', () => {
+    expect(displayFileName('v1..2.md')).toEqual({ stem: 'v1..2', ext: 'md' })
+    expect(displayFileName('archive.tar.gz')).toEqual({ stem: 'archive.tar', ext: 'gz' })
+  })
+
+  it('shows no extension when there is none', () => {
+    expect(displayFileName('README')).toEqual({ stem: 'README', ext: '' })
+    expect(displayFileName('.gitignore')).toEqual({ stem: '.gitignore', ext: '' })
+    expect(displayFileName('notes.')).toEqual({ stem: 'notes.', ext: '' })
+  })
+
+  it('keeps a hidden-looking name with an extension', () => {
+    expect(displayFileName('.hidden-looking.md')).toEqual({ stem: '.hidden-looking', ext: 'md' })
   })
 })
