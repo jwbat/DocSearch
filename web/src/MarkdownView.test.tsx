@@ -65,6 +65,33 @@ describe('MarkdownView sanitizing', () => {
     })
   })
 
+  describe('an inline tag on a line of its own', () => {
+    const poem =
+      '<magenta>  \nThere is the leisurely one,  \nWalking the Tao.  \n\n<br>    \n\nWhen the Dharma body awakens completely,  \nThere is nothing at all.  \n</magenta>\n'
+
+    it('wraps whole paragraphs, keeping their line breaks', () => {
+      const html = render(poem)
+      expect(html).toMatch(/^<article class="markdown"><span class="magenta">/)
+      expect(html).toContain('<p>There is the leisurely one,<br/>\nWalking the Tao.</p>')
+      expect(html).toContain('<p>When the Dharma body awakens completely,<br/>\nThere is nothing at all.</p>')
+      expect(html).toMatch(/<\/span><\/article>$/)
+    })
+
+    it('keeps a <br> between stanzas as its own break, between the paragraphs', () => {
+      expect(render(poem)).toMatch(/<\/p>\s*<br\/>\s*<p>/)
+    })
+
+    it('works without the closing tag, and right after a line of text', () => {
+      const html = render('Intro line\n<gold>\nstanza **one**\n')
+      expect(html).toContain('<p>Intro line</p>')
+      expect(html).toMatch(/<span class="gold">\s*<p>stanza <strong>one<\/strong><\/p>/)
+    })
+
+    it('leaves fenced code alone', () => {
+      expect(render('```\n<gold>\nx\n```')).toContain('<code>&lt;gold&gt;\nx\n</code>')
+    })
+  })
+
   it('no longer accepts class names written in the doc', () => {
     const html = render('<div class="warn">x</div>\n\n<span class="mark">y</span>')
     expect(html).not.toContain('class="warn"')

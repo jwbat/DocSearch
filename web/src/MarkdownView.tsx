@@ -99,6 +99,42 @@ function tidyNowrap(el: Element) {
   })
 }
 
+// spaceWrappingTags lets an inline tag on a line of its own wrap whole
+// paragraphs, e.g. a poem in <magenta>…</magenta>, written compactly:
+//
+//   <magenta>
+//   line one
+//   line two
+//
+//   next stanza
+//   </magenta>
+//
+// Left alone, markdown would read <magenta> and the lines up to the next
+// blank line as one raw HTML block: no paragraph, no line breaks, no
+// markdown. So such a tag line gets a blank line on each side (outside
+// fenced code), and the text between is parsed as ordinary paragraphs.
+const INLINE_TAG_LINE = new RegExp(`^\\s*</?(?:${INLINE_TAGS.join('|')})>\\s*$`, 'i')
+const FENCE = /^ {0,3}(`{3,}|~{3,})/
+
+function spaceWrappingTags(text: string): string {
+  const out: string[] = []
+  let fence = ''
+  for (const line of text.split('\n')) {
+    const f = FENCE.exec(line)?.[1]
+    if (fence) {
+      if (f && f[0] === fence[0] && f.length >= fence.length) fence = ''
+    } else if (f) {
+      fence = f
+    } else if (INLINE_TAG_LINE.test(line)) {
+      if (out.length && out[out.length - 1].trim() !== '') out.push('')
+      out.push(line.trim(), '')
+      continue
+    }
+    out.push(line)
+  }
+  return out.join('\n')
+}
+
 const rehypePlugins: Options['rehypePlugins'] = [
   rehypeRaw,
   [rehypeSanitize, sanitizeSchema],
@@ -114,7 +150,7 @@ export default function MarkdownView({ text }: { text: string }) {
   return (
     <article className="markdown">
       <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={rehypePlugins}>
-        {text}
+        {spaceWrappingTags(text)}
       </Markdown>
     </article>
   )

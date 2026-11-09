@@ -15,7 +15,10 @@ list to check (and update) when adding or changing one.
 | `<nowrap>`   | block  | `<div class="nowrap">`    | Each source line stays one line; long ones scroll sideways        |
 | `<mark>`     | inline | `<span class="mark">`     | Accent-colored highlight                                          |
 | `<muted>`    | inline | `<span class="muted">`    | Dimmed text                                                       |
-| `<bright>`   | inline | `<span class="bright">`   | Bright yellow-green text (`#ddf093`)                              |
+| `<lime>`     | inline | `<span class="lime">`     | Bright yellow-green text (`#ddf093`)                              |
+| `<magenta>`  | inline | `<span class="magenta">`  | Rose-magenta text (`#ce4760`)                                     |
+| `<cream>`    | inline | `<span class="cream">`    | Pale cream text (`#f5fdc6`)                                       |
+| `<gold>`     | inline | `<span class="gold">`     | Gold text (`#f5bb00`)                                             |
 | `<bold>`     | inline | `<span class="bold">`     | Bold (weight 700), the same as markdown's `**bold**`              |
 | `<semibold>` | inline | `<span class="semibold">` | Semibold (weight 600), the headings' weight: a step lighter       |
 
@@ -54,7 +57,7 @@ A <mark>key term</mark> and a <muted>quiet aside</muted>.
   blank lines, e.g. right under a name line:
 
   ```markdown
-  <bright>des Prez, Josquin</bright>
+  <lime>des Prez, Josquin</lime>
   <indent>
   <nowrap>
   Born: c. 1450
@@ -83,9 +86,23 @@ A <mark>key term</mark> and a <muted>quiet aside</muted>.
 - **`<bold>` vs `**bold**`:** they look the same, but `<bold>` is a tag,
   so it still works where markdown isn't parsed, e.g. in a compact
   `<nowrap>` block on its own. Weights combine with colors by nesting:
-  `<bright><semibold>des Prez</semibold></bright>`.
+  `<lime><semibold>des Prez</semibold></lime>`.
 - **Inline tags go mid-sentence,** like `<span>`. Markdown inside them
   (`**bold**`, `` `code` ``) works.
+  - **They can also wrap whole paragraphs**, e.g. a poem in a color: put
+    the opening and closing tags on lines of their own. No blank lines
+    are needed around them; paragraphs, line breaks (two trailing spaces)
+    and markdown inside all work, and a `<br>` on its own line between
+    paragraphs adds an extra blank line.
+
+    ```markdown
+    <magenta>
+    First line,
+    second line.
+
+    Next stanza.
+    </magenta>
+    ```
 - **Always close the tag.** `<note/>` isn't self-closing in HTML: it's
   treated as an opening tag and styles everything after it.
 - **Tag names aren't case-sensitive:** `<NOTE>` is the same as `<note>`.
