@@ -1,0 +1,204 @@
+DocSearch: the Go Lambda backend
+================================
+
+What DocSearch is, in one paragraph
+-----------------------------------
+DocSearch is a personal document library. The documents (markdown notes,
+recipes, images, PDFs, and so on) live in a folder on my laptop. A
+command-line tool, also written in Go, copies them up to AWS: the file
+contents go into an S3 bucket, and a list of every file (the "manifest")
+goes into a DynamoDB table. A small React website, served through
+CloudFront, lets you browse and read those documents from any browser,
+including a phone.
+
+The Go Lambda is the piece that sits between the website and the stored
+documents. It is the website's entire backend.
+
+
+What the Lambda does
+--------------------
+The Lambda is read-only. It never adds, changes, or deletes anything. Only
+the command-line tool on my laptop writes to S3 and DynamoDB. The Lambda
+answers exactly two questions for the website:
+
+1. "What documents are there?"  (GET /manifest)
+
+   The Lambda reads the whole manifest table in DynamoDB, leaves out any
+   files that have been marked as deleted, sorts the rest by path, and
+   returns the list as JSON. Each entry has the file's path (for example
+   "recipes/lentil_soup.md"), its size, its content type, a content hash,
+   and when it was last modified.
+
+   The website turns that flat list of paths into the folder tree you click
+   through. There is no separate "list a folder" call; one request gives
+   the browser everything it needs to draw the tree.
+
+2. "Give me a way to open this one file."  (GET /file-url?path=...)
+
+   When you click a file, the website asks the Lambda for it. The Lambda
+   does not send the file itself. Instead it:
+     - checks that the path is sensible (relative, no ".." tricks),
+     - looks the path up in the manifest and refuses if the file doesn't
+       exist or has been deleted, so it can't be used to reach arbitrary
+       objects in the bucket,
+     - and returns a "presigned" S3 link: a temporary URL, good for five
+       minutes, that lets the browser download that one file directly from
+       S3.
+
+   The link also tells S3 what content type to report, which is what lets
+   images and PDFs display in the browser instead of downloading.
+
+   Because the browser fetches the file straight from S3, the file's bytes
+   never pass through the Lambda. That keeps the Lambda small, fast, and
+   cheap, and means large files aren't a problem.
+
+Any other request gets a "not found" reply. If something goes wrong on the
+AWS side, the real error is written to the Lambda's logs (CloudWatch) and
+the browser only sees a generic "internal error". Every reply is marked
+"don't cache", because the manifest changes whenever I sync and the
+presigned links expire.
+
+There's no login. The documents aren't sensitive; the protection is an
+unguessable URL plus rate limiting (20 requests per second, bursts of up
+to 50).
+
+
+Where the code lives
+--------------------
+  go_files/cmd/api-lambda/main.go   Starts up: reads the table and bucket
+                                    names from environment variables,
+                                    creates the AWS clients once, and hands
+                                    each request to the router.
+  go_files/internal/api/api.go      The router and the two handlers
+                                    described above.
+  go_files/internal/api/api_test.go Tests for the handlers (no AWS needed).
+  go_files/internal/manifest/       Shared code for reading the DynamoDB
+                                    manifest, also used by the CLI.
+
+The Lambda and the command-line tool share one Go module, so they read the
+manifest the same way.
+
+
+How requests reach the Lambda
+-----------------------------
+  browser -> CloudFront -> API Gateway (HTTP API) -> Lambda -> DynamoDB/S3
+
+A single CloudFront address serves both the website and the API. Requests
+for /manifest and /file-url are forwarded to an API Gateway HTTP API, which
+invokes the Lambda. Everything else is the website itself, served from a
+separate private S3 bucket. Since the site and the API share an address,
+the website doesn't need to be told where the API is. CloudFront doesn't
+cache the API routes.
+
+
+How it was deployed
+-------------------
+All of the infrastructure is defined as code using the AWS CDK, written in
+Python, in the cdk/ folder. Nothing was set up by hand in the AWS console.
+Everything is in one AWS account in the us-west-2 (Oregon) region; the
+account and region are pinned in cdk/app.py so a deploy can't accidentally
+land somewhere else.
+
+There are two CDK stacks:
+
+  DocSearchStack     The storage: the S3 bucket holding the documents and
+                     the DynamoDB manifest table. Both are set to be kept
+                     even if the stack is deleted, so the documents can't be
+                     lost by tearing down infrastructure. The bucket has
+                     versioning turned on, so deleted files can be
+                     recovered.
+
+  DocSearchWebStack  Everything the website needs: the Go Lambda, the API
+                     Gateway, the website's S3 bucket, and the CloudFront
+                     distribution. All of this is disposable and can be
+                     rebuilt from scratch with a redeploy.
+                     (cdk/docsearch_cdk/web_stack.py)
+
+How the Lambda is built and configured:
+
+  - There's no separate build step. When you run "cdk deploy", the CDK
+    compiles the Go code itself. If Go is installed on the machine, it
+    uses that; if not, it falls back to compiling inside a Docker container
+    (golang:1.23).
+
+  - It's compiled for Linux on ARM (AWS Graviton) into a single
+    self-contained program named "bootstrap". Lambda's "provided.al2023"
+    runtime (a minimal Amazon Linux 2023 environment) runs that program
+    directly. Go doesn't need a language runtime, so this is the standard
+    way to run Go on Lambda.
+
+  - The Lambda gets 256 MB of memory and a 10-second timeout. The names of
+    the documents bucket and manifest table are passed in as environment
+    variables (DOCSEARCH_BUCKET and DOCSEARCH_TABLE).
+
+  - Its permissions are read-only: it can read the DynamoDB table and read
+    objects from the documents bucket. The S3 read permission is needed
+    because presigned links are signed with the Lambda's own identity and
+    only work if the Lambda itself could read the file.
+
+  - Its logs go to a CloudWatch log group that keeps them for one month.
+
+  - The same "cdk deploy" also builds the React website, uploads it to the
+    site bucket, and clears CloudFront's cache so changes show up right
+    away.
+
+To deploy, from the cdk/ folder with the Python virtual environment set up
+and AWS credentials for the "personal" profile:
+
+    AWS_PROFILE=personal cdk diff           # preview what will change
+    AWS_PROFILE=personal cdk deploy --all   # deploy both stacks
+
+The deploy prints the website address (SiteUrl), currently
+https://do5al0s1ozgt6.cloudfront.net, and the API's own address (ApiUrl),
+which is only used when running the website locally for development.
+
+For more detail, see README.md at the top of the project, cdk/README.md,
+and go_files/README.md.
+
+
+How "cdk deploy" ends up compiling the Go code
+----------------------------------------------
+The Go code is compiled while the CDK is preparing the deployment, before
+anything is sent to AWS. Step by step:
+
+1. "cdk deploy" runs the Python app. The file cdk/cdk.json tells the CDK
+   command to run app.py. That script builds the stacks in memory and
+   writes them out as CloudFormation templates in the cdk/cdk.out/
+   folder. This step is called "synthesis".
+
+2. Defining the Lambda's code starts the build. In web_stack.py, the
+   Lambda's code is declared as an "asset": a local folder (go_files/)
+   that the CDK will package and upload. The asset has "bundling" options,
+   which tell the CDK not to upload the folder as it is, but to run a build
+   on it first and upload what the build produces.
+
+3. The CDK checks whether anything has changed. It computes a fingerprint
+   of the files in go_files/, skipping files that can't affect the
+   program (READMEs, tests, the Dockerfile, and so on). If a build for that
+   fingerprint is already in cdk.out/, the CDK reuses it. That's why
+   editing a README doesn't trigger a rebuild or redeploy of the Lambda.
+
+4. It tries the local build first. The CDK asks a small helper in
+   web_stack.py (_LocalGoBuild) to do the build. If Go is installed, the
+   helper runs:
+
+       go build -trimpath -ldflags=-s -w -o <output folder>/bootstrap ./cmd/api-lambda
+
+   inside go_files/, with GOOS=linux, GOARCH=arm64 and CGO_ENABLED=0 set.
+   Those settings cross-compile a self-contained Linux/ARM program even on
+   a Mac. The helper then tells the CDK the build is done.
+
+5. Docker is the fallback. If Go isn't installed, the helper says so, and
+   the CDK runs the same build inside a golang:1.23 Docker container
+   instead. Same result, but Docker has to be running.
+
+6. The build output is uploaded. The CDK zips the output folder, which
+   contains just the "bootstrap" program. During the deploy it uploads the
+   zip to the staging bucket that "cdk bootstrap" set up when the account
+   was first prepared for the CDK. The CloudFormation template points the
+   Lambda at that zip, so CloudFormation swaps in the new code. Lambda's
+   provided.al2023 runtime then runs "bootstrap" directly.
+
+Because the compile happens during synthesis rather than the deploy
+itself, "cdk synth" and "cdk diff" compile the Go code too. A compile error
+shows up there, before anything reaches AWS.

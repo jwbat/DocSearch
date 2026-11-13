@@ -16,8 +16,7 @@ list to check (and update) when adding or changing one.
 | `<mark>`     | inline | `<span class="mark">`     | Accent-colored highlight                                          |
 | `<muted>`    | inline | `<span class="muted">`    | Dimmed text                                                       |
 | `<lime>`     | inline | `<span class="lime">`     | Bright yellow-green text (`#ddf093`)                              |
-| `<magenta>`  | inline | `<span class="magenta">`  | Rose-magenta text (`#ce4760`)                                     |
-| `<cream>`    | inline | `<span class="cream">`    | Pale cream text (`#f5fdc6`)                                       |
+| `<magenta>`  | inline | `<span class="magenta">`  | Rose-magenta text (`#e8667f`)                                     |
 | `<gold>`     | inline | `<span class="gold">`     | Gold text (`#f5bb00`)                                             |
 | `<bold>`     | inline | `<span class="bold">`     | Bold (weight 700), the same as markdown's `**bold**`              |
 | `<semibold>` | inline | `<span class="semibold">` | Semibold (weight 600), the headings' weight: a step lighter       |
