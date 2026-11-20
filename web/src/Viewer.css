@@ -8,6 +8,7 @@
   max-width: 70ch;
   margin: 0 auto;
   overflow-wrap: break-word;
+  color: #e6dfd0;
 }
 
 .markdown > :first-child {
